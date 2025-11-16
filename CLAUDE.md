@@ -13,11 +13,13 @@ Building an AI-powered evaluation system that automatically reviews human annota
 
 ## Functional Requirements
 
-### 3.1 Data Ingestion ✓ Current Focus
-- Accept JSON file upload (shape: array of submissions)
-- Parse and validate submissions
-- Persist to Supabase (not localStorage/memory)
-- Each submission has: id, queueId, labelingTaskId, createdAt, questions[], answers{}
+### 3.1 Data Ingestion ✅ COMPLETED
+- ✅ Accept JSON file upload (shape: array of submissions)
+- ✅ Parse and validate submissions
+- ✅ Persist to Supabase (not localStorage/memory)
+- ✅ Each submission has: id, queueId, labelingTaskId, createdAt, questions[], answers{}
+- ✅ Drag-and-drop support with visual feedback
+- ✅ Comprehensive validation with detailed error messages
 
 ### 3.2 AI Judge Definitions
 - CRUD interface for judges
@@ -115,14 +117,22 @@ evaluations (
 ]
 ```
 
-## Key Files (Expected Structure)
-- `src/types/index.ts` - TypeScript interfaces for Submission, Judge, Evaluation
-- `src/lib/supabase.ts` - Supabase client initialization
+## Key Files
+
+### Completed (3.1 Data Ingestion)
+- ✅ `src/types/index.ts` - TypeScript interfaces for Submission, Judge, Evaluation, ValidationResult
+- ✅ `src/lib/supabase.ts` - Supabase client initialization
+- ✅ `src/services/submissionService.ts` - Data ingestion & persistence with validation
+- ✅ `src/components/FileUpload.tsx` - JSON file upload component with drag-and-drop
+- ✅ `src/components/FileUpload.test.tsx` - Comprehensive test suite (9/9 passing)
+- ✅ `src/App.tsx` - Main app with clean, minimal layout
+- ✅ `src/App.css` - Styling with FigJam-style dotted background
+- ✅ `src/assets/besimple-logo.png` - BeSimple branding logo
+
+### To Be Implemented
 - `src/lib/llm.ts` - LLM provider abstraction (OpenAI/Anthropic/Gemini)
-- `src/services/submissionService.ts` - Data ingestion & persistence
 - `src/services/judgeService.ts` - Judge CRUD operations
 - `src/services/evaluationService.ts` - Run evaluations, call LLM APIs
-- `src/components/FileUpload.tsx` - JSON file upload component
 - `src/pages/QueuePage.tsx` - View submissions, assign judges, run evaluations
 - `src/pages/ResultsPage.tsx` - Filter and view evaluation results
 
@@ -158,9 +168,24 @@ evaluations (
 - [x] Supabase setup with schema
 - [x] Environment variables configured
 - [x] Custom /review slash command created
-- [ ] Install React dependencies
-- [ ] Data ingestion component
-- [ ] Judge CRUD
-- [ ] Assignment UI
-- [ ] Evaluation runner
-- [ ] Results view
+- [x] Install React dependencies
+- [x] **Data ingestion component (3.1) - COMPLETE**
+  - [x] React 18 + TypeScript + Vite setup
+  - [x] FileUpload component with drag-and-drop
+  - [x] JSON validation with detailed error messages
+  - [x] Supabase persistence (no localStorage)
+  - [x] Comprehensive test suite (9/9 passing)
+  - [x] Clean UI with BeSimple branding
+  - [x] Lucide icons integration
+- [ ] Judge CRUD (3.2)
+- [ ] Assignment UI (3.3)
+- [ ] Evaluation runner (3.4)
+- [ ] Results view (3.5)
+
+## Architectural Decisions (3.1)
+1. **Testing Strategy**: Vitest + React Testing Library for component tests
+2. **Styling Approach**: Inline styles for rapid development; can migrate to CSS modules later
+3. **File Validation**: Client-side validation before upload to provide immediate feedback
+4. **Error Handling**: Granular error messages showing specific validation failures
+5. **State Management**: React hooks (useState) - sufficient for current scope
+6. **Type Safety**: Strict TypeScript with verbatimModuleSyntax enabled
