@@ -18,30 +18,64 @@ body {
 
 .app {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   padding: 24px;
 }
 
-.container {
-  width: 100%;
+/* Centered layout for data ingestion */
+.container--centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 48px);
   max-width: 600px;
+  margin: 0 auto;
 }
 
-.header {
+/* Wide layout for judges page */
+.container--wide {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Centered header for data ingestion */
+.header--centered {
   text-align: center;
   margin-bottom: 48px;
 }
 
-.logo {
+.header--centered .logo {
   max-width: 80px;
   height: auto;
   display: block;
   margin: 0 auto 16px auto;
 }
 
-.header h1 {
+.header--centered h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #000000;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+/* Horizontal header for judges page */
+.header--horizontal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 48px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.header--horizontal .logo {
+  max-width: 40px;
+  height: auto;
+}
+
+.header--horizontal h1 {
   font-size: 24px;
   font-weight: 600;
   color: #000000;
