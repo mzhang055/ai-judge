@@ -85,7 +85,7 @@ export function JudgesPage() {
       {/* Header */}
       <div style={styles.header}>
         <div>
-          <h1 style={styles.title}>AI Judges</h1>
+          <h1 style={styles.title}>Manage Judges</h1>
           <p style={styles.subtitle}>
             Manage AI judges that evaluate human annotations
           </p>
