@@ -11,26 +11,29 @@ import {
 } from 'react-router-dom';
 import { FileUpload } from './components/FileUpload';
 import { JudgesPage } from './pages/JudgesPage';
+import { QueuesPage } from './pages/QueuesPage';
+import { QueuePage } from './pages/QueuePage';
 import logo from './assets/besimple-logo.png';
 import './App.css';
 
 function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
-  const isJudgesPage = location.pathname === '/judges';
+  const isDataIngestionPage = location.pathname === '/';
+  const showNavigation = !isDataIngestionPage;
 
   return (
     <div className="app">
       <div
         className={
-          isJudgesPage
+          showNavigation
             ? 'container container--wide'
             : 'container container--centered'
         }
       >
         <header
           className={
-            isJudgesPage
+            showNavigation
               ? 'header header--horizontal'
               : 'header header--centered'
           }
@@ -40,8 +43,8 @@ function AppContent() {
             <h1>AI Judge</h1>
           </div>
 
-          {/* Navigation - only show on Judges page */}
-          {isJudgesPage && (
+          {/* Navigation - show on all pages except data ingestion */}
+          {showNavigation && (
             <nav style={styles.nav}>
               <Link
                 to="/"
@@ -51,6 +54,17 @@ function AppContent() {
                 }}
               >
                 Data Ingestion
+              </Link>
+              <Link
+                to="/queues"
+                style={{
+                  ...styles.navLink,
+                  ...(location.pathname.startsWith('/queues')
+                    ? styles.navLinkActive
+                    : {}),
+                }}
+              >
+                Queues
               </Link>
               <Link
                 to="/judges"
@@ -75,8 +89,8 @@ function AppContent() {
                 <FileUpload
                   onUploadComplete={(count) => {
                     console.log(`Successfully uploaded ${count} submissions`);
-                    // Navigate to judges page after successful upload
-                    navigate('/judges');
+                    // Navigate to queues page after successful upload
+                    navigate('/queues');
                   }}
                   onError={(error) => {
                     console.error('Upload error:', error);
@@ -84,6 +98,8 @@ function AppContent() {
                 />
               }
             />
+            <Route path="/queues" element={<QueuesPage />} />
+            <Route path="/queues/:queueId" element={<QueuePage />} />
             <Route path="/judges" element={<JudgesPage />} />
           </Routes>
         </main>
