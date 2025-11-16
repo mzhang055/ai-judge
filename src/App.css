@@ -26,19 +26,21 @@ body {
 
 .container {
   width: 100%;
-  max-width: 600px;
+  max-width: 1400px;
 }
 
 .header {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 48px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .logo {
-  max-width: 80px;
+  max-width: 40px;
   height: auto;
-  display: block;
-  margin: 0 auto 16px auto;
 }
 
 .header h1 {
