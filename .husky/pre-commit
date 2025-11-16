@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# Format code
+echo "📝 Formatting code..."
+npm run format
+
+# Type check
+echo "🔎 Type checking..."
+npm run type-check
+
+# Add formatted files back to staging
+git add -u
+
+echo "✅ Pre-commit checks passed!"
