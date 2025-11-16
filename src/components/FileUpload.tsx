@@ -9,7 +9,7 @@
  * <FileUpload onUploadComplete={(count) => console.log(`Uploaded ${count} submissions`)} />
  * ```
  */
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { DragEvent, ChangeEvent } from 'react';
 import { Upload } from 'lucide-react';
 import {
@@ -28,6 +28,8 @@ export interface FileUploadProps {
   className?: string;
 }
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
 /**
  * FileUpload component for uploading and validating submission JSON files
  */
@@ -42,8 +44,26 @@ export function FileUpload({
   const [isDragging, setIsDragging] = useState(false);
   const [previewData, setPreviewData] = useState<Submission[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const timeoutRef = useRef<number | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleFile = async (file: File) => {
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+      const error = `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB`;
+      setUploadStatus({ status: 'error', message: error });
+      onError?.(error);
+      return;
+    }
+
     // Check file type
     if (!file.name.endsWith('.json')) {
       const error = 'Please upload a JSON file';
@@ -79,8 +99,18 @@ export function FileUpload({
       setPreviewData(submissions);
       setUploadStatus({ status: 'idle' });
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error occurred';
+      let errorMessage = 'Unknown error occurred';
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+
+        // Check for network errors
+        if (error.message.includes('Failed to fetch')) {
+          errorMessage =
+            'Network error: Unable to connect. Please check your internet connection and try again.';
+        }
+      }
+
       setUploadStatus({ status: 'error', message: errorMessage });
       onError?.(errorMessage);
     }
@@ -139,7 +169,7 @@ export function FileUpload({
       onUploadComplete?.(savedIds.length);
 
       // Reset after 3 seconds
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         setUploadStatus({ status: 'idle' });
         setPreviewData(null);
         if (fileInputRef.current) {
@@ -147,8 +177,18 @@ export function FileUpload({
         }
       }, 3000);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error occurred';
+      let errorMessage = 'Unknown error occurred';
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+
+        // Check for network errors
+        if (error.message.includes('Failed to fetch')) {
+          errorMessage =
+            'Network error: Unable to connect to database. Please check your internet connection and try again.';
+        }
+      }
+
       setUploadStatus({ status: 'error', message: errorMessage });
       onError?.(errorMessage);
     }
