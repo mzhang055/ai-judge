@@ -7,6 +7,7 @@ import {
   Route,
   Link,
   useLocation,
+  useNavigate,
 } from 'react-router-dom';
 import { FileUpload } from './components/FileUpload';
 import { JudgesPage } from './pages/JudgesPage';
@@ -15,39 +16,55 @@ import './App.css';
 
 function AppContent() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const isJudgesPage = location.pathname === '/judges';
 
   return (
     <div className="app">
-      <div className="container">
-        <header className="header">
+      <div
+        className={
+          isJudgesPage
+            ? 'container container--wide'
+            : 'container container--centered'
+        }
+      >
+        <header
+          className={
+            isJudgesPage
+              ? 'header header--horizontal'
+              : 'header header--centered'
+          }
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             <img src={logo} alt="BeSimple Logo" className="logo" />
             <h1>AI Judge</h1>
           </div>
 
-          {/* Navigation */}
-          <nav style={styles.nav}>
-            <Link
-              to="/"
-              style={{
-                ...styles.navLink,
-                ...(location.pathname === '/' ? styles.navLinkActive : {}),
-              }}
-            >
-              Data Ingestion
-            </Link>
-            <Link
-              to="/judges"
-              style={{
-                ...styles.navLink,
-                ...(location.pathname === '/judges'
-                  ? styles.navLinkActive
-                  : {}),
-              }}
-            >
-              Judges
-            </Link>
-          </nav>
+          {/* Navigation - only show on Judges page */}
+          {isJudgesPage && (
+            <nav style={styles.nav}>
+              <Link
+                to="/"
+                style={{
+                  ...styles.navLink,
+                  ...(location.pathname === '/' ? styles.navLinkActive : {}),
+                }}
+              >
+                Data Ingestion
+              </Link>
+              <Link
+                to="/judges"
+                style={{
+                  ...styles.navLink,
+                  ...(location.pathname === '/judges'
+                    ? styles.navLinkActive
+                    : {}),
+                }}
+              >
+                Judges
+              </Link>
+            </nav>
+          )}
         </header>
 
         <main className="main">
@@ -58,6 +75,8 @@ function AppContent() {
                 <FileUpload
                   onUploadComplete={(count) => {
                     console.log(`Successfully uploaded ${count} submissions`);
+                    // Navigate to judges page after successful upload
+                    navigate('/judges');
                   }}
                   onError={(error) => {
                     console.error('Upload error:', error);
