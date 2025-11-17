@@ -4,14 +4,28 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, AlertCircle, Settings } from 'lucide-react';
+import {
+  ArrowLeft,
+  AlertCircle,
+  Settings,
+  Play,
+  CheckCircle,
+  XCircle,
+  ClipboardList,
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 import { JudgeAssignment } from '../components/JudgeAssignment';
 import { getErrorMessage } from '../lib/errors';
+import logo from '../assets/besimple-logo.png';
 import {
   getQueueSubmissions,
   getQueueQuestions,
   type QuestionInfo,
 } from '../services/queueService';
+import {
+  runEvaluations,
+  type EvaluationProgress,
+} from '../services/evaluationService';
 import type { StoredSubmission } from '../types';
 
 export function QueuePage() {
@@ -21,6 +35,9 @@ export function QueuePage() {
   const [questions, setQuestions] = useState<QuestionInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRunning, setIsRunning] = useState(false);
+  const [progress, setProgress] = useState<EvaluationProgress | null>(null);
+  const [showResults, setShowResults] = useState(false);
 
   const loadQueueData = useCallback(async () => {
     if (!queueId) return;
@@ -47,25 +64,39 @@ export function QueuePage() {
     }
   }, [queueId, loadQueueData]);
 
+  const handleRunEvaluations = async () => {
+    if (!queueId) return;
+
+    setIsRunning(true);
+    setProgress({ total: 0, completed: 0, failed: 0 }); // Initialize immediately
+    setShowResults(false);
+    setError(null);
+
+    try {
+      const result = await runEvaluations(queueId, (prog) => {
+        setProgress(prog);
+      });
+
+      // Keep running state true briefly to show final progress
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setIsRunning(false);
+      setShowResults(true);
+
+      toast.success(
+        `Evaluations complete! ${result.completed} succeeded, ${result.failed} failed.`
+      );
+    } catch (err) {
+      const errorMessage = getErrorMessage(err, 'Failed to run evaluations');
+      setError(errorMessage);
+      toast.error(errorMessage);
+      setIsRunning(false);
+    }
+  };
+
   if (loading) {
     return (
       <div style={styles.loadingContainer}>
         <p>Loading queue...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={styles.container}>
-        <div style={styles.errorBanner}>
-          <AlertCircle size={16} />
-          <span>{error}</span>
-        </div>
-        <button style={styles.backButton} onClick={() => navigate('/queues')}>
-          <ArrowLeft size={16} />
-          Back to Queues
-        </button>
       </div>
     );
   }
@@ -80,6 +111,14 @@ export function QueuePage() {
 
   return (
     <div style={styles.container}>
+      {/* Error Banner */}
+      {error && (
+        <div style={styles.errorBanner}>
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
+
       {/* Header */}
       <div style={styles.header}>
         <button style={styles.backButton} onClick={() => navigate('/queues')}>
@@ -107,10 +146,22 @@ export function QueuePage() {
 
       {/* Questions and Judge Assignments */}
       <div style={styles.content}>
-        <h2 style={styles.sectionTitle}>Assign Judges to Questions</h2>
-        <p style={styles.sectionSubtitle}>
-          Select which AI judges should evaluate each question in this queue
-        </p>
+        <div style={styles.sectionHeader}>
+          <div>
+            <h2 style={styles.sectionTitle}>Assign Judges to Questions</h2>
+            <p style={styles.sectionSubtitle}>
+              Select which AI judges should evaluate each question in this queue
+            </p>
+          </div>
+          <button
+            style={styles.runButton}
+            onClick={handleRunEvaluations}
+            disabled={isRunning || questions.length === 0}
+          >
+            <Play size={16} />
+            <span>{isRunning ? 'Running...' : 'Run AI Judges'}</span>
+          </button>
+        </div>
 
         {questions.length === 0 ? (
           <div style={styles.emptyState}>
@@ -129,6 +180,76 @@ export function QueuePage() {
           </div>
         )}
       </div>
+
+      {/* Progress Modal */}
+      {isRunning && progress && (
+        <>
+          <div style={styles.backdrop} />
+          <div style={styles.progressModal}>
+            <div style={styles.logoContainer}>
+              <img src={logo} alt="BeSimple Logo" style={styles.spinningLogo} />
+            </div>
+            <h3 style={styles.progressTitle}>Evaluations in Progress</h3>
+            <div style={styles.progressBar}>
+              <div
+                style={{
+                  ...styles.progressFill,
+                  width: `${progress.total > 0 ? ((progress.completed + progress.failed) / progress.total) * 100 : 0}%`,
+                }}
+              />
+            </div>
+            <p style={styles.progressText}>
+              {progress.completed + progress.failed} of {progress.total}{' '}
+              evaluations complete
+            </p>
+          </div>
+        </>
+      )}
+
+      {/* Results Summary Modal */}
+      {showResults && !isRunning && (
+        <>
+          <div style={styles.backdrop} onClick={() => setShowResults(false)} />
+          <div style={styles.resultsModal}>
+            <h3 style={styles.resultsTitle}>Evaluation Complete</h3>
+            <div style={styles.resultsStats}>
+              <div style={styles.resultsStat}>
+                <ClipboardList size={24} color="#6b7280" />
+                <div>
+                  <span style={styles.resultsValue}>
+                    {progress?.total || 0}
+                  </span>
+                  <span style={styles.resultsLabel}>Planned</span>
+                </div>
+              </div>
+              <div style={styles.resultsStat}>
+                <CheckCircle size={24} color="#10b981" />
+                <div>
+                  <span style={styles.resultsValue}>
+                    {progress?.completed || 0}
+                  </span>
+                  <span style={styles.resultsLabel}>Completed</span>
+                </div>
+              </div>
+              <div style={styles.resultsStat}>
+                <XCircle size={24} color="#ef4444" />
+                <div>
+                  <span style={styles.resultsValue}>
+                    {progress?.failed || 0}
+                  </span>
+                  <span style={styles.resultsLabel}>Failed</span>
+                </div>
+              </div>
+            </div>
+            <button
+              style={styles.closeButton}
+              onClick={() => setShowResults(false)}
+            >
+              Close
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -212,6 +333,13 @@ const styles: Record<string, React.CSSProperties> = {
   content: {
     marginTop: '32px',
   },
+  sectionHeader: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: '24px',
+    gap: '24px',
+  },
   sectionTitle: {
     fontSize: '18px',
     fontWeight: 600,
@@ -221,7 +349,132 @@ const styles: Record<string, React.CSSProperties> = {
   sectionSubtitle: {
     fontSize: '14px',
     color: '#6b7280',
+    marginBottom: 0,
+  },
+  runButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '10px 20px',
+    fontSize: '14px',
+    fontWeight: 500,
+    color: '#fff',
+    backgroundColor: '#10b981',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'background-color 0.15s',
+    flexShrink: 0,
+  },
+  backdrop: {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 999,
+  },
+  progressModal: {
+    position: 'fixed' as const,
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+    padding: '48px 32px 32px',
+    width: '90%',
+    maxWidth: '400px',
+    zIndex: 1000,
+    textAlign: 'center' as const,
+  },
+  logoContainer: {
     marginBottom: '24px',
+    display: 'flex',
+    justifyContent: 'center',
+  },
+  spinningLogo: {
+    width: '80px',
+    height: '80px',
+    animation: 'spin 2s linear infinite',
+  },
+  progressTitle: {
+    fontSize: '18px',
+    fontWeight: 600,
+    color: '#111827',
+    marginBottom: '24px',
+  },
+  progressBar: {
+    width: '100%',
+    height: '8px',
+    backgroundColor: '#e5e7eb',
+    borderRadius: '4px',
+    overflow: 'hidden',
+    marginBottom: '16px',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#10b981',
+    transition: 'width 0.3s ease',
+  },
+  progressText: {
+    fontSize: '14px',
+    color: '#6b7280',
+    margin: 0,
+  },
+  resultsModal: {
+    position: 'fixed' as const,
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+    padding: '32px',
+    width: '90%',
+    maxWidth: '400px',
+    zIndex: 1000,
+  },
+  resultsTitle: {
+    fontSize: '20px',
+    fontWeight: 600,
+    color: '#111827',
+    marginBottom: '24px',
+    textAlign: 'center' as const,
+  },
+  resultsStats: {
+    display: 'flex',
+    justifyContent: 'space-around',
+    marginBottom: '32px',
+  },
+  resultsStat: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    gap: '12px',
+  },
+  resultsValue: {
+    display: 'block',
+    fontSize: '32px',
+    fontWeight: 700,
+    color: '#111827',
+  },
+  resultsLabel: {
+    display: 'block',
+    fontSize: '14px',
+    color: '#6b7280',
+  },
+  closeButton: {
+    width: '100%',
+    padding: '12px',
+    fontSize: '14px',
+    fontWeight: 500,
+    color: '#fff',
+    backgroundColor: '#4f46e5',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
   },
   emptyState: {
     padding: '48px',

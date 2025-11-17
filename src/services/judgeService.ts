@@ -8,11 +8,11 @@ import type { Judge } from '../types';
 
 /**
  * Input type for creating a new judge (omits generated fields)
+ * Note: Always uses GPT-5-mini model
  */
 export interface CreateJudgeInput {
   name: string;
   system_prompt: string;
-  model_name: string;
   is_active?: boolean;
 }
 
@@ -22,7 +22,6 @@ export interface CreateJudgeInput {
 export interface UpdateJudgeInput {
   name?: string;
   system_prompt?: string;
-  model_name?: string;
   is_active?: boolean;
 }
 
@@ -35,7 +34,6 @@ export async function createJudge(input: CreateJudgeInput): Promise<Judge> {
     .insert({
       name: input.name,
       system_prompt: input.system_prompt,
-      model_name: input.model_name,
       is_active: input.is_active ?? true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

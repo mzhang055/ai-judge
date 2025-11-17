@@ -47,9 +47,6 @@ export function JudgeList({
               <span style={styles.headerText}>Name</span>
             </th>
             <th style={styles.th}>
-              <span style={styles.headerText}>Model</span>
-            </th>
-            <th style={styles.th}>
               <span style={styles.headerText}>System Prompt</span>
             </th>
             <th style={styles.th}>
@@ -74,11 +71,6 @@ export function JudgeList({
                   </div>
                   <span style={styles.nameText}>{judge.name}</span>
                 </div>
-              </td>
-
-              {/* Model */}
-              <td style={styles.td}>
-                <span style={styles.modelBadge}>{judge.model_name}</span>
               </td>
 
               {/* System Prompt (truncated) */}

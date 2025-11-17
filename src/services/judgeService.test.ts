@@ -30,7 +30,6 @@ describe('judgeService', () => {
       const mockInput: CreateJudgeInput = {
         name: 'Test Judge',
         system_prompt: 'You are a test judge.',
-        model_name: 'gpt-4',
         is_active: true,
       };
 
@@ -64,7 +63,6 @@ describe('judgeService', () => {
         expect.objectContaining({
           name: mockInput.name,
           system_prompt: mockInput.system_prompt,
-          model_name: mockInput.model_name,
           is_active: mockInput.is_active,
         })
       );
@@ -74,7 +72,6 @@ describe('judgeService', () => {
       const mockInput: CreateJudgeInput = {
         name: 'Test Judge',
         system_prompt: 'Test prompt',
-        model_name: 'gpt-4',
       };
 
       const mockSelect = vi.fn().mockReturnValue({
@@ -104,7 +101,6 @@ describe('judgeService', () => {
         id: '123',
         name: 'Test Judge',
         system_prompt: 'Test prompt',
-        model_name: 'gpt-4',
         is_active: true,
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-01T00:00:00Z',
@@ -164,7 +160,6 @@ describe('judgeService', () => {
           id: '1',
           name: 'Judge 1',
           system_prompt: 'Prompt 1',
-          model_name: 'gpt-4',
           is_active: true,
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
@@ -173,7 +168,6 @@ describe('judgeService', () => {
           id: '2',
           name: 'Judge 2',
           system_prompt: 'Prompt 2',
-          model_name: 'claude-3-opus',
           is_active: false,
           created_at: '2024-01-02T00:00:00Z',
           updated_at: '2024-01-02T00:00:00Z',
@@ -207,7 +201,6 @@ describe('judgeService', () => {
           id: '1',
           name: 'Active Judge',
           system_prompt: 'Prompt',
-          model_name: 'gpt-4',
           is_active: true,
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
@@ -250,7 +243,6 @@ describe('judgeService', () => {
         id: '123',
         name: 'Updated Judge',
         system_prompt: 'Updated prompt',
-        model_name: 'gpt-4',
         is_active: false,
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-02T00:00:00Z',

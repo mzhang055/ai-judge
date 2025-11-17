@@ -4,7 +4,13 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Folder, AlertCircle, ChevronRight, Settings } from 'lucide-react';
+import {
+  Folder,
+  AlertCircle,
+  ChevronRight,
+  Settings,
+  ArrowLeft,
+} from 'lucide-react';
 import { listQueues, type QueueSummary } from '../services/queueService';
 
 export function QueuesPage() {
@@ -51,6 +57,12 @@ export function QueuesPage() {
 
   return (
     <div style={styles.container}>
+      {/* Back button */}
+      <button style={styles.backButton} onClick={() => navigate('/')}>
+        <ArrowLeft size={16} />
+        <span>Back to Data Ingestion</span>
+      </button>
+
       {/* Header */}
       <div style={styles.header}>
         <div>
@@ -124,6 +136,21 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: '1000px',
     margin: '0 auto',
     padding: '0 24px 40px',
+  },
+  backButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 12px',
+    fontSize: '14px',
+    fontWeight: 500,
+    color: '#6b7280',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    marginBottom: '16px',
+    transition: 'background-color 0.15s',
   },
   loadingContainer: {
     padding: '48px',

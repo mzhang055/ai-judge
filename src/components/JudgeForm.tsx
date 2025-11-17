@@ -14,14 +14,6 @@ interface JudgeFormProps {
   onSubmit: (input: CreateJudgeInput) => Promise<void>;
 }
 
-const MODEL_OPTIONS = [
-  { value: 'gpt-4', label: 'GPT-4 (OpenAI)' },
-  { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo (OpenAI)' },
-  { value: 'claude-3-opus', label: 'Claude 3 Opus (Anthropic)' },
-  { value: 'claude-3-sonnet', label: 'Claude 3 Sonnet (Anthropic)' },
-  { value: 'gemini-pro', label: 'Gemini Pro (Google)' },
-];
-
 export function JudgeForm({
   judge,
   isOpen,
@@ -30,7 +22,6 @@ export function JudgeForm({
 }: JudgeFormProps) {
   const [name, setName] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
-  const [modelName, setModelName] = useState('gpt-4');
   const [isActive, setIsActive] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,13 +31,11 @@ export function JudgeForm({
     if (judge) {
       setName(judge.name);
       setSystemPrompt(judge.system_prompt);
-      setModelName(judge.model_name);
       setIsActive(judge.is_active);
     } else {
       // Reset form for new judge
       setName('');
       setSystemPrompt('');
-      setModelName('gpt-4');
       setIsActive(true);
     }
     setError(null);
@@ -71,7 +60,6 @@ export function JudgeForm({
       await onSubmit({
         name: name.trim(),
         system_prompt: systemPrompt.trim(),
-        model_name: modelName,
         is_active: isActive,
       });
       onClose();
@@ -135,28 +123,7 @@ export function JudgeForm({
               required
               aria-required="true"
             />
-          </div>
-
-          {/* Model selection */}
-          <div style={styles.field}>
-            <label htmlFor="judge-model" style={styles.label}>
-              Model <span style={styles.required}>*</span>
-            </label>
-            <select
-              id="judge-model"
-              value={modelName}
-              onChange={(e) => setModelName(e.target.value)}
-              style={styles.select}
-              disabled={loading}
-              required
-              aria-required="true"
-            >
-              {MODEL_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <p style={styles.hint}>All judges use GPT-5-mini model</p>
           </div>
 
           {/* System prompt */}

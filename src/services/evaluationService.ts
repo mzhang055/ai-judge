@@ -1,0 +1,433 @@
+/**
+ * Service for running AI evaluations
+ */
+
+import { supabase } from '../lib/supabase';
+import { callLLM, LLMError, LLMErrorType } from '../lib/llm';
+import { createError } from '../lib/errors';
+import type { Evaluation, Judge, StoredSubmission } from '../types';
+import { getQueueSubmissions } from './queueService';
+import { listAssignmentsForQueue } from './judgeAssignmentService';
+import { listJudges } from './judgeService';
+
+export interface EvaluationResult {
+  verdict: 'pass' | 'fail' | 'inconclusive';
+  reasoning: string;
+}
+
+export interface EvaluationProgress {
+  total: number;
+  completed: number;
+  failed: number;
+  currentSubmission?: string;
+  currentQuestion?: string;
+}
+
+export type ProgressCallback = (progress: EvaluationProgress) => void;
+
+/**
+ * Parse LLM response to extract verdict and reasoning
+ */
+function parseEvaluationResponse(response: string): EvaluationResult {
+  // Look for verdict markers (case-insensitive)
+  const verdictMatch = response.match(
+    /verdict\s*:\s*(pass|fail|inconclusive)/i
+  );
+
+  let verdict: 'pass' | 'fail' | 'inconclusive' = 'inconclusive';
+
+  if (verdictMatch) {
+    verdict = verdictMatch[1].toLowerCase() as 'pass' | 'fail' | 'inconclusive';
+  } else {
+    // Try to infer from response content
+    const lower = response.toLowerCase();
+    if (lower.includes('pass') && !lower.includes('fail')) {
+      verdict = 'pass';
+    } else if (lower.includes('fail')) {
+      verdict = 'fail';
+    }
+  }
+
+  // Extract reasoning (everything after "reasoning:" or use full response)
+  const reasoningMatch = response.match(/reasoning\s*:\s*(.+)/is);
+  const reasoning = reasoningMatch ? reasoningMatch[1].trim() : response.trim();
+
+  return { verdict, reasoning };
+}
+
+/**
+ * Create a prompt for the judge to evaluate a submission
+ */
+function createEvaluationPrompt(
+  judge: Judge,
+  submission: StoredSubmission,
+  questionId: string
+): { system: string; user: string } {
+  const question = submission.questions.find((q) => q.data.id === questionId);
+  const answer = submission.answers[questionId];
+
+  if (!question) {
+    throw new Error(
+      `Question ${questionId} not found in submission ${submission.id}`
+    );
+  }
+
+  const system = judge.system_prompt;
+
+  const user = `Please evaluate the following submission:
+
+**Question ID:** ${questionId}
+**Question Type:** ${question.data.questionType}
+**Question Text:** ${question.data.questionText}
+
+**Answer:** ${JSON.stringify(answer, null, 2)}
+
+**Submission Metadata:**
+- Submission ID: ${submission.id}
+- Queue ID: ${submission.queueId}
+- Labeling Task ID: ${submission.labelingTaskId}
+- Created At: ${submission.createdAt}
+
+Please provide your evaluation in the following format:
+
+Verdict: [pass/fail/inconclusive]
+Reasoning: [Your detailed reasoning here]`;
+
+  return { system, user };
+}
+
+/**
+ * Get user-friendly error message for LLM errors
+ */
+function getErrorMessage(error: unknown): string {
+  if (error instanceof LLMError) {
+    switch (error.type) {
+      case LLMErrorType.TIMEOUT:
+        return `Request timed out. The LLM took too long to respond.`;
+      case LLMErrorType.RATE_LIMIT:
+        return `Rate limit exceeded. Too many requests to the LLM API.${error.retryAfter ? ` Retry after ${error.retryAfter}s.` : ''}`;
+      case LLMErrorType.QUOTA_EXCEEDED:
+        return `Quota exceeded. You have run out of API credits.`;
+      case LLMErrorType.INVALID_API_KEY:
+        return `Invalid API key. Please check your configuration.`;
+      case LLMErrorType.NETWORK_ERROR:
+        return `Network error. Unable to connect to the LLM API.`;
+      case LLMErrorType.INVALID_REQUEST:
+        return `Invalid request. The prompt may be malformed.`;
+      case LLMErrorType.SERVER_ERROR:
+        return `LLM server error. The API is experiencing issues.`;
+      default:
+        return error.message;
+    }
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'Unknown error';
+}
+
+/**
+ * Evaluate a single submission/question/judge combination
+ */
+async function evaluateSingle(
+  submission: StoredSubmission,
+  questionId: string,
+  judge: Judge
+): Promise<Evaluation> {
+  try {
+    // Create prompt
+    const { system, user } = createEvaluationPrompt(
+      judge,
+      submission,
+      questionId
+    );
+
+    // Call LLM with timeout and retries
+    const response = await callLLM({
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+      temperature: 0.3, // Lower temperature for more consistent evaluations
+      maxTokens: 2000,
+      timeout: 60000, // 60s timeout per request
+      retries: 2, // Retry up to 2 times (3 total attempts)
+      retryDelay: 1000, // Start with 1s delay
+    });
+
+    // Parse response
+    const result = parseEvaluationResponse(response.content);
+
+    // Save to database
+    const { data, error } = await supabase
+      .from('evaluations')
+      .insert({
+        submission_id: submission.id,
+        question_id: questionId,
+        judge_id: judge.id,
+        judge_name: judge.name, // Denormalized for history
+        verdict: result.verdict,
+        reasoning: result.reasoning,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw createError(`Failed to save evaluation: ${error.message}`, error);
+    }
+
+    return data;
+  } catch (err) {
+    // Get user-friendly error message
+    const errorMessage = getErrorMessage(err);
+
+    // Save failed evaluation to database
+    await supabase
+      .from('evaluations')
+      .insert({
+        submission_id: submission.id,
+        question_id: questionId,
+        judge_id: judge.id,
+        judge_name: judge.name,
+        verdict: 'inconclusive',
+        reasoning: `Error during evaluation: ${errorMessage}`,
+      })
+      .select()
+      .single();
+
+    throw err; // Re-throw to mark as failed
+  }
+}
+
+/**
+ * Run evaluations for all submissions in a queue
+ */
+export async function runEvaluations(
+  queueId: string,
+  onProgress?: ProgressCallback
+): Promise<{ completed: number; failed: number; total: number }> {
+  console.log('[Evaluations] Starting evaluations for queue:', queueId);
+
+  // Load submissions
+  const submissions = await getQueueSubmissions(queueId);
+  console.log('[Evaluations] Loaded submissions:', submissions.length);
+
+  if (submissions.length === 0) {
+    throw new Error('No submissions found in queue');
+  }
+
+  // Load judge assignments
+  const assignments = await listAssignmentsForQueue(queueId);
+  console.log(
+    '[Evaluations] Loaded assignments:',
+    assignments.length,
+    assignments
+  );
+
+  if (assignments.length === 0) {
+    throw new Error(
+      'No judges assigned to this queue. Please assign judges before running evaluations.'
+    );
+  }
+
+  // Load judges
+  const allJudges = await listJudges();
+  console.log('[Evaluations] Loaded judges:', allJudges.length, allJudges);
+  const judgeMap = new Map(allJudges.map((j) => [j.id, j]));
+
+  // Calculate total evaluations and track unassigned questions
+  let totalEvaluations = 0;
+  const evaluationPlan: Array<{
+    submission: StoredSubmission;
+    questionId: string;
+    judge: Judge;
+  }> = [];
+  const allQuestionIds = new Set<string>();
+  const assignedQuestionIds = new Set<string>();
+
+  // First pass: collect all question IDs
+  for (const submission of submissions) {
+    submission.questions.forEach((q) => allQuestionIds.add(q.data.id));
+  }
+
+  // Second pass: build evaluation plan
+  for (const submission of submissions) {
+    const questionIds = submission.questions.map((q) => q.data.id);
+
+    for (const questionId of questionIds) {
+      // Find judges assigned to this question
+      const questionAssignments = assignments.filter(
+        (a) => a.question_id === questionId
+      );
+
+      if (questionAssignments.length > 0) {
+        assignedQuestionIds.add(questionId);
+      }
+
+      for (const assignment of questionAssignments) {
+        const judge = judgeMap.get(assignment.judge_id);
+
+        if (!judge) {
+          console.warn(`Judge ${assignment.judge_id} not found, skipping`);
+          continue;
+        }
+
+        if (!judge.is_active) {
+          console.warn(`Judge ${judge.name} is inactive, skipping`);
+          continue;
+        }
+
+        evaluationPlan.push({ submission, questionId, judge });
+        totalEvaluations++;
+      }
+    }
+  }
+
+  // Check for unassigned questions
+  const unassignedQuestions = Array.from(allQuestionIds).filter(
+    (id) => !assignedQuestionIds.has(id)
+  );
+
+  if (unassignedQuestions.length > 0) {
+    const questionList = unassignedQuestions.map((id) => `"${id}"`).join(', ');
+    throw new Error(
+      `Some questions do not have judges assigned: ${questionList}. Please assign judges to all questions before running evaluations.`
+    );
+  }
+
+  if (totalEvaluations === 0) {
+    throw new Error(
+      'No evaluations to run. Check that judges are assigned and active.'
+    );
+  }
+
+  console.log('[Evaluations] Total evaluations planned:', totalEvaluations);
+  console.log('[Evaluations] Evaluation plan:', evaluationPlan);
+
+  // Run evaluations in parallel batches for efficiency
+  let completed = 0;
+  let failed = 0;
+  const BATCH_SIZE = 10; // Run 10 evaluations at a time
+
+  for (let i = 0; i < evaluationPlan.length; i += BATCH_SIZE) {
+    const batch = evaluationPlan.slice(i, i + BATCH_SIZE);
+
+    console.log(
+      `[Evaluations] Running batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(evaluationPlan.length / BATCH_SIZE)}`
+    );
+
+    // Run batch in parallel
+    const batchPromises = batch.map(async (plan) => {
+      console.log('[Evaluations] Evaluating:', {
+        submission: plan.submission.id,
+        question: plan.questionId,
+        judge: plan.judge.name,
+      });
+
+      try {
+        await evaluateSingle(plan.submission, plan.questionId, plan.judge);
+        console.log(
+          '[Evaluations] ✓ Success:',
+          plan.submission.id,
+          plan.questionId
+        );
+        return { success: true, plan };
+      } catch (err) {
+        console.error('[Evaluations] ✗ Failed:', err);
+        console.error('[Evaluations] Failed details:', {
+          submission: plan.submission.id,
+          question: plan.questionId,
+          judge: plan.judge.name,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        return { success: false, plan };
+      }
+    });
+
+    // Wait for batch to complete
+    const results = await Promise.all(batchPromises);
+
+    // Update counts
+    results.forEach((result) => {
+      if (result.success) {
+        completed++;
+      } else {
+        failed++;
+      }
+    });
+
+    // Update progress after each batch
+    onProgress?.({
+      total: totalEvaluations,
+      completed,
+      failed,
+      currentSubmission: batch[batch.length - 1]?.submission.id,
+      currentQuestion: batch[batch.length - 1]?.questionId,
+    });
+  }
+
+  // Final progress update
+  onProgress?.({
+    total: totalEvaluations,
+    completed,
+    failed,
+  });
+
+  return { completed, failed, total: totalEvaluations };
+}
+
+/**
+ * Get all evaluations for a queue
+ */
+export async function getEvaluationsForQueue(
+  queueId: string
+): Promise<Evaluation[]> {
+  // Get all submissions in queue
+  const submissions = await getQueueSubmissions(queueId);
+  const submissionIds = submissions.map((s) => s.id);
+
+  if (submissionIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from('evaluations')
+    .select('*')
+    .in('submission_id', submissionIds)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw createError(`Failed to fetch evaluations: ${error.message}`, error);
+  }
+
+  return data || [];
+}
+
+/**
+ * Get evaluation statistics for a queue
+ */
+export interface EvaluationStats {
+  total: number;
+  pass: number;
+  fail: number;
+  inconclusive: number;
+  passRate: number;
+}
+
+export async function getEvaluationStats(
+  queueId: string
+): Promise<EvaluationStats> {
+  const evaluations = await getEvaluationsForQueue(queueId);
+
+  const pass = evaluations.filter((e) => e.verdict === 'pass').length;
+  const fail = evaluations.filter((e) => e.verdict === 'fail').length;
+  const inconclusive = evaluations.filter(
+    (e) => e.verdict === 'inconclusive'
+  ).length;
+  const total = evaluations.length;
+  const passRate = total > 0 ? (pass / total) * 100 : 0;
+
+  return { total, pass, fail, inconclusive, passRate };
+}
