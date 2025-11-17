@@ -2,10 +2,11 @@
  * QueuePage - Display queue details and assign judges to questions
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { JudgeAssignment } from '../components/JudgeAssignment';
+import { getErrorMessage } from '../lib/errors';
 import {
   getQueueSubmissions,
   getQueueQuestions,
@@ -21,13 +22,7 @@ export function QueuePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (queueId) {
-      loadQueueData();
-    }
-  }, [queueId]);
-
-  const loadQueueData = async () => {
+  const loadQueueData = useCallback(async () => {
     if (!queueId) return;
 
     try {
@@ -40,11 +35,17 @@ export function QueuePage() {
       setSubmissions(submissionsData);
       setQuestions(questionsData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load queue');
+      setError(getErrorMessage(err, 'Failed to load queue'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [queueId]);
+
+  useEffect(() => {
+    if (queueId) {
+      loadQueueData();
+    }
+  }, [queueId, loadQueueData]);
 
   if (loading) {
     return (

@@ -2,8 +2,9 @@
  * JudgeAssignment - Component for assigning judges to a question
  */
 
-import { useState, useEffect } from 'react';
-import { Plus, X } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Plus, X, AlertCircle } from 'lucide-react';
+import { getErrorMessage } from '../lib/errors';
 import type { Judge, JudgeAssignment as JudgeAssignmentType } from '../types';
 import { listJudges } from '../services/judgeService';
 import {
@@ -30,37 +31,39 @@ export function JudgeAssignment({
   );
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadJudges = useCallback(async () => {
+    try {
+      const data = await listJudges(true); // Only active judges
+      setJudges(data);
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to load judges'));
+    }
+  }, []);
+
+  const loadAssignments = useCallback(async () => {
+    try {
+      const data = await getAssignmentsForQuestion(queueId, questionId);
+      setAssignments(data);
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to load assignments'));
+    }
+  }, [queueId, questionId]);
 
   useEffect(() => {
     loadJudges();
     loadAssignments();
-  }, [queueId, questionId]);
+  }, [loadJudges, loadAssignments]);
 
   useEffect(() => {
     // Update assigned judge IDs when assignments change
     setAssignedJudgeIds(new Set(assignments.map((a) => a.judge_id)));
   }, [assignments]);
 
-  const loadJudges = async () => {
-    try {
-      const data = await listJudges(true); // Only active judges
-      setJudges(data);
-    } catch (err) {
-      console.error('Failed to load judges:', err);
-    }
-  };
-
-  const loadAssignments = async () => {
-    try {
-      const data = await getAssignmentsForQuestion(queueId, questionId);
-      setAssignments(data);
-    } catch (err) {
-      console.error('Failed to load assignments:', err);
-    }
-  };
-
   const handleAssign = async (judgeId: string) => {
     setLoading(true);
+    setError(null);
     try {
       await assignJudge({
         queue_id: queueId,
@@ -70,7 +73,7 @@ export function JudgeAssignment({
       await loadAssignments();
       setShowDropdown(false);
     } catch (err) {
-      console.error('Failed to assign judge:', err);
+      setError(getErrorMessage(err, 'Failed to assign judge'));
     } finally {
       setLoading(false);
     }
@@ -78,11 +81,12 @@ export function JudgeAssignment({
 
   const handleUnassign = async (judgeId: string) => {
     setLoading(true);
+    setError(null);
     try {
       await unassignJudgeFromQuestion(queueId, questionId, judgeId);
       await loadAssignments();
     } catch (err) {
-      console.error('Failed to unassign judge:', err);
+      setError(getErrorMessage(err, 'Failed to unassign judge'));
     } finally {
       setLoading(false);
     }
@@ -102,6 +106,14 @@ export function JudgeAssignment({
           <p style={styles.questionId}>ID: {questionId}</p>
         </div>
       </div>
+
+      {/* Error message */}
+      {error && (
+        <div style={styles.errorBanner} role="alert">
+          <AlertCircle size={14} />
+          <span>{error}</span>
+        </div>
+      )}
 
       <div style={styles.assignments}>
         {assignments.length === 0 ? (
@@ -183,6 +195,17 @@ const styles: Record<string, React.CSSProperties> = {
   },
   header: {
     marginBottom: '16px',
+  },
+  errorBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '10px 12px',
+    backgroundColor: '#fee2e2',
+    color: '#991b1b',
+    borderRadius: '6px',
+    marginBottom: '12px',
+    fontSize: '13px',
   },
   questionText: {
     fontSize: '15px',
