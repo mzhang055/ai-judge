@@ -70,61 +70,21 @@ AI Judge is an internal annotation platform where AI judges automatically review
    npm install
    ```
 
-3. **Configure environment variables**
+3. **Set up the database**
+
+   Run the SQL schema setup in your Supabase project:
+   - Go to Supabase Dashboard → SQL Editor
+   - Copy the complete SQL from [`DATABASE_SETUP.md`](./DATABASE_SETUP.md)
+   - Paste and run in the SQL Editor
+   - Verify with the provided verification queries
+
+4. **Configure environment variables**
 
    Create a `.env.local` file in the root directory:
    ```env
    VITE_SUPABASE_URL=your_supabase_project_url
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    VITE_OPENAI_API_KEY=your_openai_api_key
-   ```
-
-4. **Set up Supabase database**
-
-   Run the following SQL in your Supabase SQL editor:
-   ```sql
-   -- Create submissions table
-   CREATE TABLE submissions (
-     id TEXT PRIMARY KEY,
-     queue_id TEXT,
-     labeling_task_id TEXT,
-     created_at BIGINT,
-     questions JSONB,
-     answers JSONB,
-     uploaded_at TIMESTAMP DEFAULT NOW()
-   );
-
-   -- Create judges table (for future use)
-   CREATE TABLE judges (
-     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-     name TEXT NOT NULL,
-     system_prompt TEXT NOT NULL,
-     model_name TEXT NOT NULL,
-     is_active BOOLEAN DEFAULT true,
-     created_at TIMESTAMP DEFAULT NOW(),
-     updated_at TIMESTAMP DEFAULT NOW()
-   );
-
-   -- Create judge_assignments table (for future use)
-   CREATE TABLE judge_assignments (
-     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-     queue_id TEXT NOT NULL,
-     question_id TEXT NOT NULL,
-     judge_id UUID REFERENCES judges(id),
-     UNIQUE(queue_id, question_id, judge_id)
-   );
-
-   -- Create evaluations table (for future use)
-   CREATE TABLE evaluations (
-     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-     submission_id TEXT REFERENCES submissions(id),
-     question_id TEXT NOT NULL,
-     judge_id UUID REFERENCES judges(id),
-     judge_name TEXT NOT NULL,
-     verdict TEXT CHECK (verdict IN ('pass', 'fail', 'inconclusive')),
-     reasoning TEXT,
-     created_at TIMESTAMP DEFAULT NOW()
-   );
    ```
 
 5. **Run the development server**
@@ -257,7 +217,7 @@ ai-judge/
 ]
 ```
 
-A sample file (`sample-submissions.json`) is included in the project root for testing.
+A sample file (`sample-submissions.json`) is included in the project root for testing
 
 ## Development Notes
 
