@@ -216,12 +216,14 @@ const styles: Record<string, React.CSSProperties> = {
   tr: {
     borderBottom: '1px solid #f5f5f5',
     transition: 'background-color 0.12s ease',
+    backgroundColor: '#fff',
   },
   td: {
     padding: '16px',
     color: '#000',
     fontSize: '14px',
     verticalAlign: 'top',
+    backgroundColor: '#fff',
   },
   code: {
     fontFamily: 'ui-monospace, monospace',

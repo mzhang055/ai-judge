@@ -75,13 +75,7 @@ function RunItem({ run, isActive, label, onClick }: RunItemProps) {
     >
       <div style={styles.runItemBadge}>{label}</div>
       <div style={styles.runItemContent}>
-        <div style={styles.runItemDate}>
-          {new Date(run.created_at).toLocaleDateString()}
-          <br />
-          <span style={{ fontSize: '11px', opacity: 0.7 }}>
-            {new Date(run.created_at).toLocaleTimeString()}
-          </span>
-        </div>
+        {/* Score first */}
         <div style={styles.runItemStats}>
           <div style={styles.runItemPassRate}>
             {run.pass_rate?.toFixed(1) || 0}%
@@ -90,12 +84,21 @@ function RunItem({ run, isActive, label, onClick }: RunItemProps) {
             {run.total_evaluations} eval{run.total_evaluations !== 1 ? 's' : ''}
           </div>
         </div>
+        {/* Judges list second */}
         <div style={styles.runItemJudges}>
           {run.judges_summary.map((j) => (
             <span key={j.id} style={styles.judgePill}>
               {j.name}
             </span>
           ))}
+        </div>
+        {/* Date & time last */}
+        <div style={styles.runItemDate}>
+          {new Date(run.created_at).toLocaleDateString()}
+          <br />
+          <span style={{ fontSize: '11px', opacity: 0.7 }}>
+            {new Date(run.created_at).toLocaleTimeString()}
+          </span>
         </div>
       </div>
     </div>
