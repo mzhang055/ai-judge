@@ -246,43 +246,66 @@ export async function runEvaluations(
   console.log('[Evaluations] Total evaluations planned:', totalEvaluations);
   console.log('[Evaluations] Evaluation plan:', evaluationPlan);
 
-  // Run evaluations
+  // Run evaluations in parallel batches for efficiency
   let completed = 0;
   let failed = 0;
+  const BATCH_SIZE = 10; // Run 10 evaluations at a time
 
-  for (const plan of evaluationPlan) {
-    console.log('[Evaluations] Evaluating:', {
-      submission: plan.submission.id,
-      question: plan.questionId,
-      judge: plan.judge.name,
+  for (let i = 0; i < evaluationPlan.length; i += BATCH_SIZE) {
+    const batch = evaluationPlan.slice(i, i + BATCH_SIZE);
+
+    console.log(
+      `[Evaluations] Running batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(evaluationPlan.length / BATCH_SIZE)}`
+    );
+
+    // Run batch in parallel
+    const batchPromises = batch.map(async (plan) => {
+      console.log('[Evaluations] Evaluating:', {
+        submission: plan.submission.id,
+        question: plan.questionId,
+        judge: plan.judge.name,
+      });
+
+      try {
+        await evaluateSingle(plan.submission, plan.questionId, plan.judge);
+        console.log(
+          '[Evaluations] ✓ Success:',
+          plan.submission.id,
+          plan.questionId
+        );
+        return { success: true, plan };
+      } catch (err) {
+        console.error('[Evaluations] ✗ Failed:', err);
+        console.error('[Evaluations] Failed details:', {
+          submission: plan.submission.id,
+          question: plan.questionId,
+          judge: plan.judge.name,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        return { success: false, plan };
+      }
     });
 
+    // Wait for batch to complete
+    const results = await Promise.all(batchPromises);
+
+    // Update counts
+    results.forEach((result) => {
+      if (result.success) {
+        completed++;
+      } else {
+        failed++;
+      }
+    });
+
+    // Update progress after each batch
     onProgress?.({
       total: totalEvaluations,
       completed,
       failed,
-      currentSubmission: plan.submission.id,
-      currentQuestion: plan.questionId,
+      currentSubmission: batch[batch.length - 1]?.submission.id,
+      currentQuestion: batch[batch.length - 1]?.questionId,
     });
-
-    try {
-      await evaluateSingle(plan.submission, plan.questionId, plan.judge);
-      completed++;
-      console.log(
-        '[Evaluations] ✓ Success:',
-        plan.submission.id,
-        plan.questionId
-      );
-    } catch (err) {
-      failed++;
-      console.error('[Evaluations] ✗ Failed:', err);
-      console.error('[Evaluations] Failed details:', {
-        submission: plan.submission.id,
-        question: plan.questionId,
-        judge: plan.judge.name,
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
   }
 
   // Final progress update

@@ -87,6 +87,16 @@ body {
   width: 100%;
 }
 
+/* Spinning animation for logo */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 640px) {
   .header {
     margin-bottom: 32px;

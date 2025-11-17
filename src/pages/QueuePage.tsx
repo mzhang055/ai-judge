@@ -11,10 +11,12 @@ import {
   Play,
   CheckCircle,
   XCircle,
+  ClipboardList,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { JudgeAssignment } from '../components/JudgeAssignment';
 import { getErrorMessage } from '../lib/errors';
+import logo from '../assets/besimple-logo.png';
 import {
   getQueueSubmissions,
   getQueueQuestions,
@@ -66,7 +68,7 @@ export function QueuePage() {
     if (!queueId) return;
 
     setIsRunning(true);
-    setProgress(null);
+    setProgress({ total: 0, completed: 0, failed: 0 }); // Initialize immediately
     setShowResults(false);
     setError(null);
 
@@ -75,7 +77,11 @@ export function QueuePage() {
         setProgress(prog);
       });
 
+      // Keep running state true briefly to show final progress
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setIsRunning(false);
       setShowResults(true);
+
       toast.success(
         `Evaluations complete! ${result.completed} succeeded, ${result.failed} failed.`
       );
@@ -83,7 +89,6 @@ export function QueuePage() {
       const errorMessage = getErrorMessage(err, 'Failed to run evaluations');
       setError(errorMessage);
       toast.error(errorMessage);
-    } finally {
       setIsRunning(false);
     }
   };
@@ -188,35 +193,22 @@ export function QueuePage() {
         <>
           <div style={styles.backdrop} />
           <div style={styles.progressModal}>
-            <h3 style={styles.progressTitle}>Running Evaluations</h3>
-            <div style={styles.progressStats}>
-              <div style={styles.progressStat}>
-                <span style={styles.progressLabel}>Total:</span>
-                <span style={styles.progressValue}>{progress.total}</span>
-              </div>
-              <div style={styles.progressStat}>
-                <CheckCircle size={16} color="#10b981" />
-                <span style={styles.progressValue}>{progress.completed}</span>
-              </div>
-              <div style={styles.progressStat}>
-                <XCircle size={16} color="#ef4444" />
-                <span style={styles.progressValue}>{progress.failed}</span>
-              </div>
+            <div style={styles.logoContainer}>
+              <img src={logo} alt="BeSimple Logo" style={styles.spinningLogo} />
             </div>
+            <h3 style={styles.progressTitle}>Evaluations in Progress</h3>
             <div style={styles.progressBar}>
               <div
                 style={{
                   ...styles.progressFill,
-                  width: `${((progress.completed + progress.failed) / progress.total) * 100}%`,
+                  width: `${progress.total > 0 ? ((progress.completed + progress.failed) / progress.total) * 100 : 0}%`,
                 }}
               />
             </div>
-            {progress.currentSubmission && (
-              <p style={styles.progressDetails}>
-                Evaluating: {progress.currentSubmission} -{' '}
-                {progress.currentQuestion}
-              </p>
-            )}
+            <p style={styles.progressText}>
+              {progress.completed + progress.failed} of {progress.total}{' '}
+              evaluations complete
+            </p>
           </div>
         </>
       )}
@@ -228,6 +220,15 @@ export function QueuePage() {
           <div style={styles.resultsModal}>
             <h3 style={styles.resultsTitle}>Evaluation Complete</h3>
             <div style={styles.resultsStats}>
+              <div style={styles.resultsStat}>
+                <ClipboardList size={24} color="#6b7280" />
+                <div>
+                  <span style={styles.resultsValue}>
+                    {progress?.total || 0}
+                  </span>
+                  <span style={styles.resultsLabel}>Planned</span>
+                </div>
+              </div>
               <div style={styles.resultsStat}>
                 <CheckCircle size={24} color="#10b981" />
                 <div>
@@ -389,37 +390,27 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#fff',
     borderRadius: '12px',
     boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-    padding: '32px',
+    padding: '48px 32px 32px',
     width: '90%',
-    maxWidth: '500px',
+    maxWidth: '400px',
     zIndex: 1000,
-  },
-  progressTitle: {
-    fontSize: '20px',
-    fontWeight: 600,
-    color: '#111827',
-    marginBottom: '24px',
     textAlign: 'center' as const,
   },
-  progressStats: {
-    display: 'flex',
-    justifyContent: 'space-around',
+  logoContainer: {
     marginBottom: '24px',
-  },
-  progressStat: {
     display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
+    justifyContent: 'center',
   },
-  progressLabel: {
-    fontSize: '14px',
-    color: '#6b7280',
-    fontWeight: 500,
+  spinningLogo: {
+    width: '80px',
+    height: '80px',
+    animation: 'spin 2s linear infinite',
   },
-  progressValue: {
+  progressTitle: {
     fontSize: '18px',
     fontWeight: 600,
     color: '#111827',
+    marginBottom: '24px',
   },
   progressBar: {
     width: '100%',
@@ -434,10 +425,9 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#10b981',
     transition: 'width 0.3s ease',
   },
-  progressDetails: {
-    fontSize: '13px',
+  progressText: {
+    fontSize: '14px',
     color: '#6b7280',
-    textAlign: 'center' as const,
     margin: 0,
   },
   resultsModal: {
