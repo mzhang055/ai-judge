@@ -101,21 +101,6 @@ export function QueuePage() {
     );
   }
 
-  if (error) {
-    return (
-      <div style={styles.container}>
-        <div style={styles.errorBanner}>
-          <AlertCircle size={16} />
-          <span>{error}</span>
-        </div>
-        <button style={styles.backButton} onClick={() => navigate('/queues')}>
-          <ArrowLeft size={16} />
-          Back to Queues
-        </button>
-      </div>
-    );
-  }
-
   if (!queueId) {
     return (
       <div style={styles.container}>
@@ -126,6 +111,14 @@ export function QueuePage() {
 
   return (
     <div style={styles.container}>
+      {/* Error Banner */}
+      {error && (
+        <div style={styles.errorBanner}>
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
+
       {/* Header */}
       <div style={styles.header}>
         <button style={styles.backButton} onClick={() => navigate('/queues')}>

@@ -237,14 +237,22 @@ export async function runEvaluations(
   console.log('[Evaluations] Loaded judges:', allJudges.length, allJudges);
   const judgeMap = new Map(allJudges.map((j) => [j.id, j]));
 
-  // Calculate total evaluations
+  // Calculate total evaluations and track unassigned questions
   let totalEvaluations = 0;
   const evaluationPlan: Array<{
     submission: StoredSubmission;
     questionId: string;
     judge: Judge;
   }> = [];
+  const allQuestionIds = new Set<string>();
+  const assignedQuestionIds = new Set<string>();
 
+  // First pass: collect all question IDs
+  for (const submission of submissions) {
+    submission.questions.forEach((q) => allQuestionIds.add(q.data.id));
+  }
+
+  // Second pass: build evaluation plan
   for (const submission of submissions) {
     const questionIds = submission.questions.map((q) => q.data.id);
 
@@ -253,6 +261,10 @@ export async function runEvaluations(
       const questionAssignments = assignments.filter(
         (a) => a.question_id === questionId
       );
+
+      if (questionAssignments.length > 0) {
+        assignedQuestionIds.add(questionId);
+      }
 
       for (const assignment of questionAssignments) {
         const judge = judgeMap.get(assignment.judge_id);
@@ -271,6 +283,18 @@ export async function runEvaluations(
         totalEvaluations++;
       }
     }
+  }
+
+  // Check for unassigned questions
+  const unassignedQuestions = Array.from(allQuestionIds).filter(
+    (id) => !assignedQuestionIds.has(id)
+  );
+
+  if (unassignedQuestions.length > 0) {
+    const questionList = unassignedQuestions.map((id) => `"${id}"`).join(', ');
+    throw new Error(
+      `Some questions do not have judges assigned: ${questionList}. Please assign judges to all questions before running evaluations.`
+    );
   }
 
   if (totalEvaluations === 0) {

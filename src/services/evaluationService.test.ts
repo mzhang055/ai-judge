@@ -310,6 +310,217 @@ describe('Evaluation Service - Error Handling', () => {
       );
     });
 
+    it('should detect when some questions lack judge assignments', async () => {
+      // Create submission with 2 questions
+      const submissionWith2Questions: StoredSubmission = {
+        ...mockSubmission,
+        questions: [
+          {
+            rev: 1,
+            data: {
+              id: 'q1',
+              questionType: 'single_choice',
+              questionText: 'Question 1?',
+            },
+          },
+          {
+            rev: 1,
+            data: {
+              id: 'q2',
+              questionType: 'single_choice',
+              questionText: 'Question 2?',
+            },
+          },
+        ],
+      };
+
+      vi.spyOn(queueService, 'getQueueSubmissions').mockResolvedValue([
+        submissionWith2Questions,
+      ]);
+
+      // Only assign judge to q1, not q2
+      const assignmentOnlyForQ1: JudgeAssignment = {
+        id: 'assign-1',
+        queue_id: 'queue-1',
+        question_id: 'q1',
+        judge_id: 'judge-1',
+      };
+
+      vi.spyOn(
+        judgeAssignmentService,
+        'listAssignmentsForQueue'
+      ).mockResolvedValue([assignmentOnlyForQ1]);
+
+      await expect(runEvaluations('queue-1')).rejects.toThrow(
+        /Some questions do not have judges assigned.*q2/
+      );
+    });
+
+    it('should detect multiple unassigned questions', async () => {
+      // Create submission with 3 questions
+      const submissionWith3Questions: StoredSubmission = {
+        ...mockSubmission,
+        questions: [
+          {
+            rev: 1,
+            data: {
+              id: 'q1',
+              questionType: 'single_choice',
+              questionText: 'Q1?',
+            },
+          },
+          {
+            rev: 1,
+            data: {
+              id: 'q2',
+              questionType: 'single_choice',
+              questionText: 'Q2?',
+            },
+          },
+          {
+            rev: 1,
+            data: {
+              id: 'q3',
+              questionType: 'single_choice',
+              questionText: 'Q3?',
+            },
+          },
+        ],
+      };
+
+      vi.spyOn(queueService, 'getQueueSubmissions').mockResolvedValue([
+        submissionWith3Questions,
+      ]);
+
+      // Only assign judge to q1
+      const assignmentOnlyForQ1: JudgeAssignment = {
+        id: 'assign-1',
+        queue_id: 'queue-1',
+        question_id: 'q1',
+        judge_id: 'judge-1',
+      };
+
+      vi.spyOn(
+        judgeAssignmentService,
+        'listAssignmentsForQueue'
+      ).mockResolvedValue([assignmentOnlyForQ1]);
+
+      const errorPromise = runEvaluations('queue-1');
+      await expect(errorPromise).rejects.toThrow(
+        'Some questions do not have judges assigned'
+      );
+      await expect(errorPromise).rejects.toThrow('q2');
+      await expect(errorPromise).rejects.toThrow('q3');
+    });
+
+    it('should succeed when all questions have judges assigned', async () => {
+      // Create submission with 2 questions
+      const submissionWith2Questions: StoredSubmission = {
+        ...mockSubmission,
+        questions: [
+          {
+            rev: 1,
+            data: {
+              id: 'q1',
+              questionType: 'single_choice',
+              questionText: 'Q1?',
+            },
+          },
+          {
+            rev: 1,
+            data: {
+              id: 'q2',
+              questionType: 'single_choice',
+              questionText: 'Q2?',
+            },
+          },
+        ],
+      };
+
+      vi.spyOn(queueService, 'getQueueSubmissions').mockResolvedValue([
+        submissionWith2Questions,
+      ]);
+
+      // Assign judges to both questions
+      const assignments: JudgeAssignment[] = [
+        {
+          id: 'assign-1',
+          queue_id: 'queue-1',
+          question_id: 'q1',
+          judge_id: 'judge-1',
+        },
+        {
+          id: 'assign-2',
+          queue_id: 'queue-1',
+          question_id: 'q2',
+          judge_id: 'judge-1',
+        },
+      ];
+
+      vi.spyOn(
+        judgeAssignmentService,
+        'listAssignmentsForQueue'
+      ).mockResolvedValue(assignments);
+
+      vi.spyOn(llm, 'callLLM').mockResolvedValue({
+        content: 'Verdict: pass\nReasoning: Good',
+        model: 'gpt-5-mini',
+      });
+
+      const result = await runEvaluations('queue-1');
+
+      // Should create 2 evaluations (1 submission × 2 questions × 1 judge each)
+      expect(result.completed).toBe(2);
+      expect(result.failed).toBe(0);
+      expect(result.total).toBe(2);
+    });
+
+    it('should handle multiple judges assigned to same question', async () => {
+      const judge2: Judge = {
+        ...mockJudge,
+        id: 'judge-2',
+        name: 'Judge 2',
+      };
+
+      vi.spyOn(judgeService, 'listJudges').mockResolvedValue([
+        mockJudge,
+        judge2,
+      ]);
+
+      // Assign 2 judges to the same question
+      const assignments: JudgeAssignment[] = [
+        {
+          id: 'assign-1',
+          queue_id: 'queue-1',
+          question_id: 'q1',
+          judge_id: 'judge-1',
+        },
+        {
+          id: 'assign-2',
+          queue_id: 'queue-1',
+          question_id: 'q1',
+          judge_id: 'judge-2',
+        },
+      ];
+
+      vi.spyOn(
+        judgeAssignmentService,
+        'listAssignmentsForQueue'
+      ).mockResolvedValue(assignments);
+
+      vi.spyOn(llm, 'callLLM').mockResolvedValue({
+        content: 'Verdict: pass\nReasoning: Good',
+        model: 'gpt-5-mini',
+      });
+
+      const result = await runEvaluations('queue-1');
+
+      // Should create 2 evaluations (1 submission × 1 question × 2 judges)
+      expect(result.completed).toBe(2);
+      expect(result.failed).toBe(0);
+      expect(result.total).toBe(2);
+    });
+
     it('should skip inactive judges', async () => {
       const inactiveJudge = { ...mockJudge, is_active: false };
       vi.spyOn(judgeService, 'listJudges').mockResolvedValue([inactiveJudge]);
@@ -325,6 +536,116 @@ describe('Evaluation Service - Error Handling', () => {
       await expect(runEvaluations('queue-1')).rejects.toThrow(
         'No evaluations to run'
       );
+    });
+  });
+
+  describe('Response parsing', () => {
+    it('should handle malformed verdict in LLM response', async () => {
+      vi.spyOn(llm, 'callLLM').mockResolvedValue({
+        content: 'Verdict: INVALID\nReasoning: Something',
+        model: 'gpt-5-mini',
+      });
+
+      const result = await runEvaluations('queue-1');
+
+      // Should default to 'inconclusive' for invalid verdicts
+      expect(result.completed).toBe(1);
+      expect(result.failed).toBe(0);
+    });
+
+    it('should handle LLM response with no verdict marker', async () => {
+      vi.spyOn(llm, 'callLLM').mockResolvedValue({
+        content: 'This looks good to me. The answer is correct.',
+        model: 'gpt-5-mini',
+      });
+
+      const result = await runEvaluations('queue-1');
+
+      // Should infer verdict or default to inconclusive
+      expect(result.completed).toBe(1);
+      expect(result.failed).toBe(0);
+    });
+
+    it('should handle empty LLM response', async () => {
+      vi.spyOn(llm, 'callLLM').mockResolvedValue({
+        content: '',
+        model: 'gpt-5-mini',
+      });
+
+      const result = await runEvaluations('queue-1');
+
+      // Should handle gracefully
+      expect(result.completed).toBe(1);
+      expect(result.failed).toBe(0);
+    });
+  });
+
+  describe('Submission data validation', () => {
+    it('should handle submission with missing answer for question', async () => {
+      const submissionMissingAnswer: StoredSubmission = {
+        ...mockSubmission,
+        questions: [
+          {
+            rev: 1,
+            data: {
+              id: 'q1',
+              questionType: 'single_choice',
+              questionText: 'Question 1?',
+            },
+          },
+        ],
+        answers: {}, // No answer for q1
+      };
+
+      vi.spyOn(queueService, 'getQueueSubmissions').mockResolvedValue([
+        submissionMissingAnswer,
+      ]);
+
+      vi.spyOn(llm, 'callLLM').mockResolvedValue({
+        content: 'Verdict: inconclusive\nReasoning: Missing answer',
+        model: 'gpt-5-mini',
+      });
+
+      const result = await runEvaluations('queue-1');
+
+      // Should still run but answer will be undefined
+      expect(result.completed).toBe(1);
+      expect(result.failed).toBe(0);
+    });
+  });
+
+  describe('Database failures', () => {
+    it('should mark evaluation as failed if database save fails', async () => {
+      vi.spyOn(llm, 'callLLM').mockResolvedValue({
+        content: 'Verdict: pass\nReasoning: Good',
+        model: 'gpt-5-mini',
+      });
+
+      // Mock the supabase module's from method to simulate database error
+      const supabaseModule = await import('../lib/supabase');
+      const fromSpy = vi.spyOn(supabaseModule.supabase, 'from');
+
+      fromSpy.mockReturnValueOnce({
+        insert: vi.fn(() => ({
+          select: vi.fn(() => ({
+            single: vi.fn(() => ({
+              data: null,
+              error: { message: 'Database error' },
+            })),
+          })),
+        })),
+      } as any);
+
+      try {
+        const result = await runEvaluations('queue-1');
+
+        // Should fail when database save fails
+        expect(result.failed).toBe(1);
+        expect(result.completed).toBe(0);
+      } finally {
+        // Restore the spy
+        fromSpy.mockRestore();
+      }
     });
   });
 
