@@ -6,6 +6,52 @@
 // Fixed model - always use GPT-5-mini
 export const DEFAULT_MODEL = 'gpt-5-mini';
 
+// Error types for better error handling
+export const LLMErrorType = {
+  TIMEOUT: 'TIMEOUT',
+  RATE_LIMIT: 'RATE_LIMIT',
+  QUOTA_EXCEEDED: 'QUOTA_EXCEEDED',
+  INVALID_API_KEY: 'INVALID_API_KEY',
+  NETWORK_ERROR: 'NETWORK_ERROR',
+  INVALID_REQUEST: 'INVALID_REQUEST',
+  SERVER_ERROR: 'SERVER_ERROR',
+  UNKNOWN: 'UNKNOWN',
+} as const;
+
+export type LLMErrorType = (typeof LLMErrorType)[keyof typeof LLMErrorType];
+
+export class LLMError extends Error {
+  type: LLMErrorType;
+  statusCode?: number;
+  retryAfter?: number;
+  originalError?: unknown;
+
+  constructor(
+    message: string,
+    type: LLMErrorType,
+    statusCode?: number,
+    retryAfter?: number,
+    originalError?: unknown
+  ) {
+    super(message);
+    this.name = 'LLMError';
+    this.type = type;
+    this.statusCode = statusCode;
+    this.retryAfter = retryAfter;
+    this.originalError = originalError;
+  }
+
+  get isRetryable(): boolean {
+    const retryableTypes: LLMErrorType[] = [
+      LLMErrorType.TIMEOUT,
+      LLMErrorType.RATE_LIMIT,
+      LLMErrorType.NETWORK_ERROR,
+      LLMErrorType.SERVER_ERROR,
+    ];
+    return retryableTypes.includes(this.type);
+  }
+}
+
 export interface LLMMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -25,57 +71,249 @@ export interface LLMCallOptions {
   messages: LLMMessage[];
   temperature?: number;
   maxTokens?: number;
+  timeout?: number; // timeout in milliseconds
+  retries?: number; // number of retries for transient failures
+  retryDelay?: number; // base delay between retries in milliseconds
 }
 
 /**
- * Call OpenAI API with GPT-5-mini
+ * Parse error from OpenAI API response
+ */
+function parseOpenAIError(
+  status: number,
+  errorData: any,
+  statusText: string
+): LLMError {
+  const errorMessage = errorData?.error?.message || statusText;
+  const errorType = errorData?.error?.type;
+
+  // Parse retry-after header if present
+  let retryAfter: number | undefined;
+  if (errorData?.retryAfter) {
+    retryAfter = parseInt(errorData.retryAfter, 10);
+  }
+
+  // Classify error type
+  let type: LLMErrorType;
+
+  switch (status) {
+    case 401:
+      type = LLMErrorType.INVALID_API_KEY;
+      break;
+    case 429:
+      // Could be rate limit or quota exceeded
+      if (
+        errorType === 'insufficient_quota' ||
+        errorMessage.toLowerCase().includes('quota')
+      ) {
+        type = LLMErrorType.QUOTA_EXCEEDED;
+      } else {
+        type = LLMErrorType.RATE_LIMIT;
+      }
+      break;
+    case 400:
+      type = LLMErrorType.INVALID_REQUEST;
+      break;
+    case 500:
+    case 502:
+    case 503:
+    case 504:
+      type = LLMErrorType.SERVER_ERROR;
+      break;
+    default:
+      type = LLMErrorType.UNKNOWN;
+  }
+
+  return new LLMError(
+    `OpenAI API error (${status}): ${errorMessage}`,
+    type,
+    status,
+    retryAfter,
+    errorData
+  );
+}
+
+/**
+ * Call OpenAI API with timeout
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeout: number
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    // Check if error is due to abort
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new LLMError(
+        `Request timed out after ${timeout}ms`,
+        LLMErrorType.TIMEOUT,
+        undefined,
+        undefined,
+        error
+      );
+    }
+
+    // Network error
+    throw new LLMError(
+      `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      LLMErrorType.NETWORK_ERROR,
+      undefined,
+      undefined,
+      error
+    );
+  }
+}
+
+/**
+ * Sleep for specified milliseconds
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Call OpenAI API with GPT-5-mini (with retries and timeout)
  */
 async function callOpenAI(options: LLMCallOptions): Promise<LLMResponse> {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
   if (!apiKey) {
-    throw new Error(
-      'OpenAI API key not configured. Please set VITE_OPENAI_API_KEY in your .env file.'
+    throw new LLMError(
+      'OpenAI API key not configured. Please set VITE_OPENAI_API_KEY in your .env file.',
+      LLMErrorType.INVALID_API_KEY
     );
   }
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: DEFAULT_MODEL,
-      messages: options.messages,
-      // GPT-5 only supports temperature: 1 (default), so we omit it
-      max_completion_tokens: options.maxTokens ?? 1000,
-    }),
-  });
+  const timeout = options.timeout ?? 30000; // Default 30s timeout
+  const maxRetries = options.retries ?? 3; // Default 3 retries
+  const baseRetryDelay = options.retryDelay ?? 1000; // Default 1s base delay
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      `OpenAI API error (${response.status}): ${errorData.error?.message || response.statusText}`
-    );
+  let lastError: LLMError | undefined;
+
+  // Retry loop
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetchWithTimeout(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: DEFAULT_MODEL,
+            messages: options.messages,
+            // GPT-5 only supports temperature: 1 (default), so we omit it
+            max_completion_tokens: options.maxTokens ?? 1000,
+          }),
+        },
+        timeout
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({
+          retryAfter: response.headers.get('retry-after'),
+        }));
+
+        const error = parseOpenAIError(
+          response.status,
+          errorData,
+          response.statusText
+        );
+
+        // Don't retry non-retryable errors
+        if (!error.isRetryable) {
+          throw error;
+        }
+
+        lastError = error;
+
+        // Calculate retry delay (exponential backoff)
+        const retryDelay = error.retryAfter
+          ? error.retryAfter * 1000 // retry-after is in seconds
+          : baseRetryDelay * Math.pow(2, attempt);
+
+        console.warn(
+          `[LLM] Attempt ${attempt + 1}/${maxRetries + 1} failed: ${error.message}. Retrying in ${retryDelay}ms...`
+        );
+
+        if (attempt < maxRetries) {
+          await sleep(retryDelay);
+          continue; // Retry
+        }
+
+        throw error; // Max retries exceeded
+      }
+
+      const data = await response.json();
+      const choice = data.choices?.[0];
+
+      if (!choice) {
+        throw new LLMError(
+          'No response from OpenAI API',
+          LLMErrorType.UNKNOWN,
+          undefined,
+          undefined,
+          data
+        );
+      }
+
+      return {
+        content: choice.message.content,
+        model: data.model,
+        usage: {
+          promptTokens: data.usage?.prompt_tokens || 0,
+          completionTokens: data.usage?.completion_tokens || 0,
+          totalTokens: data.usage?.total_tokens || 0,
+        },
+      };
+    } catch (error) {
+      // If it's already an LLMError, propagate it
+      if (error instanceof LLMError) {
+        if (!error.isRetryable || attempt >= maxRetries) {
+          throw error;
+        }
+        lastError = error;
+
+        const retryDelay = baseRetryDelay * Math.pow(2, attempt);
+        console.warn(
+          `[LLM] Attempt ${attempt + 1}/${maxRetries + 1} failed: ${error.message}. Retrying in ${retryDelay}ms...`
+        );
+
+        if (attempt < maxRetries) {
+          await sleep(retryDelay);
+          continue;
+        }
+
+        throw error;
+      }
+
+      // Unexpected error
+      throw new LLMError(
+        `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        LLMErrorType.UNKNOWN,
+        undefined,
+        undefined,
+        error
+      );
+    }
   }
 
-  const data = await response.json();
-  const choice = data.choices?.[0];
-
-  if (!choice) {
-    throw new Error('No response from OpenAI API');
-  }
-
-  return {
-    content: choice.message.content,
-    model: data.model,
-    usage: {
-      promptTokens: data.usage?.prompt_tokens || 0,
-      completionTokens: data.usage?.completion_tokens || 0,
-      totalTokens: data.usage?.total_tokens || 0,
-    },
-  };
+  // Should never reach here, but just in case
+  throw lastError || new LLMError('Max retries exceeded', LLMErrorType.UNKNOWN);
 }
 
 /**

@@ -3,7 +3,7 @@
  */
 
 import { supabase } from '../lib/supabase';
-import { callLLM } from '../lib/llm';
+import { callLLM, LLMError, LLMErrorType } from '../lib/llm';
 import { createError } from '../lib/errors';
 import type { Evaluation, Judge, StoredSubmission } from '../types';
 import { getQueueSubmissions } from './queueService';
@@ -97,6 +97,38 @@ Reasoning: [Your detailed reasoning here]`;
 }
 
 /**
+ * Get user-friendly error message for LLM errors
+ */
+function getErrorMessage(error: unknown): string {
+  if (error instanceof LLMError) {
+    switch (error.type) {
+      case LLMErrorType.TIMEOUT:
+        return `Request timed out. The LLM took too long to respond.`;
+      case LLMErrorType.RATE_LIMIT:
+        return `Rate limit exceeded. Too many requests to the LLM API.${error.retryAfter ? ` Retry after ${error.retryAfter}s.` : ''}`;
+      case LLMErrorType.QUOTA_EXCEEDED:
+        return `Quota exceeded. You have run out of API credits.`;
+      case LLMErrorType.INVALID_API_KEY:
+        return `Invalid API key. Please check your configuration.`;
+      case LLMErrorType.NETWORK_ERROR:
+        return `Network error. Unable to connect to the LLM API.`;
+      case LLMErrorType.INVALID_REQUEST:
+        return `Invalid request. The prompt may be malformed.`;
+      case LLMErrorType.SERVER_ERROR:
+        return `LLM server error. The API is experiencing issues.`;
+      default:
+        return error.message;
+    }
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'Unknown error';
+}
+
+/**
  * Evaluate a single submission/question/judge combination
  */
 async function evaluateSingle(
@@ -112,7 +144,7 @@ async function evaluateSingle(
       questionId
     );
 
-    // Call LLM (always uses GPT-5-mini)
+    // Call LLM with timeout and retries
     const response = await callLLM({
       messages: [
         { role: 'system', content: system },
@@ -120,6 +152,9 @@ async function evaluateSingle(
       ],
       temperature: 0.3, // Lower temperature for more consistent evaluations
       maxTokens: 2000,
+      timeout: 60000, // 60s timeout per request
+      retries: 2, // Retry up to 2 times (3 total attempts)
+      retryDelay: 1000, // Start with 1s delay
     });
 
     // Parse response
@@ -145,9 +180,10 @@ async function evaluateSingle(
 
     return data;
   } catch (err) {
-    // Save failed evaluation to database
-    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    // Get user-friendly error message
+    const errorMessage = getErrorMessage(err);
 
+    // Save failed evaluation to database
     await supabase
       .from('evaluations')
       .insert({
