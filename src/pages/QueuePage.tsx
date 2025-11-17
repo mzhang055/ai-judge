@@ -12,6 +12,7 @@ import {
   CheckCircle,
   XCircle,
   ClipboardList,
+  BarChart3,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { JudgeAssignment } from '../components/JudgeAssignment';
@@ -134,13 +135,22 @@ export function QueuePage() {
               question{questions.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <button
-            style={styles.manageButton}
-            onClick={() => navigate('/judges')}
-          >
-            <Settings size={16} />
-            <span>Manage Judges</span>
-          </button>
+          <div style={styles.actionButtons}>
+            <button
+              style={styles.resultsButton}
+              onClick={() => navigate(`/queues/${queueId}/results`)}
+            >
+              <BarChart3 size={16} />
+              <span>View Results</span>
+            </button>
+            <button
+              style={styles.manageButton}
+              onClick={() => navigate('/judges')}
+            >
+              <Settings size={16} />
+              <span>Manage Judges</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -241,12 +251,20 @@ export function QueuePage() {
                 </div>
               </div>
             </div>
-            <button
-              style={styles.closeButton}
-              onClick={() => setShowResults(false)}
-            >
-              Close
-            </button>
+            <div style={styles.modalButtons}>
+              <button
+                style={styles.viewResultsButton}
+                onClick={() => navigate(`/queues/${queueId}/results`)}
+              >
+                View Results
+              </button>
+              <button
+                style={styles.closeButton}
+                onClick={() => setShowResults(false)}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </>
       )}
@@ -303,6 +321,26 @@ const styles: Record<string, React.CSSProperties> = {
   },
   titleSection: {
     flex: 1,
+  },
+  actionButtons: {
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'center',
+  },
+  resultsButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '10px 16px',
+    fontSize: '14px',
+    fontWeight: 500,
+    color: '#10b981',
+    backgroundColor: '#fff',
+    border: '1px solid #d1fae5',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
   },
   manageButton: {
     display: 'flex',
@@ -417,6 +455,33 @@ const styles: Record<string, React.CSSProperties> = {
     height: '100%',
     backgroundColor: '#10b981',
     transition: 'width 0.3s ease',
+  },
+  progressStats: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '32px',
+    marginBottom: '24px',
+  },
+  progressStat: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  progressLabel: {
+    fontSize: '14px',
+    fontWeight: 500,
+    color: '#6b7280',
+  },
+  progressValue: {
+    fontSize: '18px',
+    fontWeight: 600,
+    color: '#111827',
+  },
+  progressDetails: {
+    fontSize: '13px',
+    color: '#6b7280',
+    marginTop: '8px',
+    textAlign: 'center' as const,
   },
   progressText: {
     fontSize: '14px',
