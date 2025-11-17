@@ -12,6 +12,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { DragEvent, ChangeEvent } from 'react';
 import { Upload } from 'lucide-react';
+import toast from 'react-hot-toast';
 import {
   parseJSONFile,
   validateSubmissions,
@@ -171,6 +172,11 @@ export function FileUpload({
         totalSubmissions: previewData.length,
         uploadedSubmissions: savedIds.length,
       });
+
+      // Show success toast
+      toast.success(
+        `Successfully uploaded ${savedIds.length} submission${savedIds.length !== 1 ? 's' : ''}!`
+      );
 
       onUploadComplete?.(savedIds.length);
 

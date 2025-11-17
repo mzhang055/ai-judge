@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, X, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { getErrorMessage } from '../lib/errors';
 import type { Judge, JudgeAssignment as JudgeAssignmentType } from '../types';
 import { listJudges } from '../services/judgeService';
@@ -64,6 +65,7 @@ export function JudgeAssignment({
   const handleAssign = async (judgeId: string) => {
     setLoading(true);
     setError(null);
+    const judgeName = getJudgeName(judgeId);
     try {
       await assignJudge({
         queue_id: queueId,
@@ -72,8 +74,11 @@ export function JudgeAssignment({
       });
       await loadAssignments();
       setShowDropdown(false);
+      toast.success(`Judge "${judgeName}" assigned successfully!`);
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to assign judge'));
+      const errorMessage = getErrorMessage(err, 'Failed to assign judge');
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -82,11 +87,15 @@ export function JudgeAssignment({
   const handleUnassign = async (judgeId: string) => {
     setLoading(true);
     setError(null);
+    const judgeName = getJudgeName(judgeId);
     try {
       await unassignJudgeFromQuestion(queueId, questionId, judgeId);
       await loadAssignments();
+      toast.success(`Judge "${judgeName}" unassigned successfully!`);
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to unassign judge'));
+      const errorMessage = getErrorMessage(err, 'Failed to unassign judge');
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

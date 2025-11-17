@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { JudgeList } from '../components/JudgeList';
 import { JudgeForm } from '../components/JudgeForm';
 import { getErrorMessage } from '../lib/errors';
@@ -66,21 +67,23 @@ export function JudgesPage() {
         setJudges((prev) =>
           prev.map((j) => (j.id === updated.id ? updated : j))
         );
+        toast.success(`Judge "${updated.name}" updated successfully!`);
       } else {
         // Create new judge
         const created = await createJudge(input);
         // Optimistic update
         setJudges((prev) => [created, ...prev]);
+        toast.success(`Judge "${created.name}" created successfully!`);
       }
       setIsFormOpen(false);
       setEditingJudge(undefined);
     } catch (err) {
-      setError(
-        getErrorMessage(
-          err,
-          editingJudge ? 'Failed to update judge' : 'Failed to create judge'
-        )
+      const errorMessage = getErrorMessage(
+        err,
+        editingJudge ? 'Failed to update judge' : 'Failed to create judge'
       );
+      setError(errorMessage);
+      toast.error(errorMessage);
       throw err; // Re-throw so JudgeForm can handle it
     } finally {
       setActionLoading(false);
@@ -103,8 +106,11 @@ export function JudgesPage() {
       setDeleteConfirm(null);
 
       await deleteJudge(judgeToDelete.id);
+      toast.success(`Judge "${judgeToDelete.name}" deleted successfully!`);
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to delete judge'));
+      const errorMessage = getErrorMessage(err, 'Failed to delete judge');
+      setError(errorMessage);
+      toast.error(errorMessage);
       // Rollback on error - reload all judges
       await loadJudges();
     } finally {
