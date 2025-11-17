@@ -2,7 +2,15 @@
  * JudgeList - Displays all judges in a clean table layout
  */
 
-import { Edit2, Trash2, User } from 'lucide-react';
+import {
+  Edit2,
+  Trash2,
+  User,
+  FileText,
+  Power,
+  Calendar,
+  Settings,
+} from 'lucide-react';
 import type { Judge } from '../types';
 
 interface JudgeListProps {
@@ -44,19 +52,34 @@ export function JudgeList({
         <thead>
           <tr style={styles.headerRow}>
             <th style={{ ...styles.th, ...styles.thName }}>
-              <span style={styles.headerText}>Name</span>
+              <span style={styles.headerText}>
+                <User size={14} />
+                <span>Name</span>
+              </span>
             </th>
             <th style={styles.th}>
-              <span style={styles.headerText}>System Prompt</span>
+              <span style={styles.headerText}>
+                <FileText size={14} />
+                <span>System Prompt</span>
+              </span>
             </th>
             <th style={styles.th}>
-              <span style={styles.headerText}>Active</span>
+              <span style={styles.headerText}>
+                <Power size={14} />
+                <span>Status</span>
+              </span>
             </th>
             <th style={styles.th}>
-              <span style={styles.headerText}>Created</span>
+              <span style={styles.headerText}>
+                <Calendar size={14} />
+                <span>Created</span>
+              </span>
             </th>
             <th style={{ ...styles.th, ...styles.thActions }}>
-              <span style={styles.headerText}>Actions</span>
+              <span style={styles.headerText}>
+                <Settings size={14} />
+                <span>Actions</span>
+              </span>
             </th>
           </tr>
         </thead>
@@ -183,11 +206,9 @@ const styles: Record<string, React.CSSProperties> = {
   th: {
     padding: '12px 16px',
     textAlign: 'left',
-    fontSize: '12px',
+    fontSize: '13px',
     fontWeight: 500,
     color: '#6b7280',
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.05em',
   },
   thName: {
     paddingLeft: '24px',

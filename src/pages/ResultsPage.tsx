@@ -12,6 +12,11 @@ import {
   XCircle,
   HelpCircle,
   ChevronDown,
+  FileText,
+  MessageSquare,
+  User,
+  Award,
+  Calendar,
 } from 'lucide-react';
 import { getEvaluationsForQueue } from '../services/evaluationService';
 import { getQueueQuestions } from '../services/queueService';
@@ -194,12 +199,12 @@ export function ResultsPage() {
       </div>
 
       {/* Filters */}
-      <div style={styles.filtersSection}>
+      <div style={styles.filtersCard}>
         <div style={styles.filtersHeader}>
-          <div style={styles.filtersTitle}>
-            <Filter size={16} />
-            <span>Filters</span>
-          </div>
+          <h3 style={styles.filtersTitle}>
+            <Filter size={18} />
+            <span>Filter Results</span>
+          </h3>
           {hasActiveFilters && (
             <button style={styles.clearButton} onClick={clearAllFilters}>
               Clear all
@@ -210,13 +215,15 @@ export function ResultsPage() {
         <div style={styles.filtersRow}>
           {/* Judge Filter */}
           <div style={styles.filterGroup}>
+            <label style={styles.filterLabel}>Judge</label>
             <button
               style={styles.filterButton}
               onClick={() => setShowJudgeFilter(!showJudgeFilter)}
             >
-              <span>
-                Judge
-                {selectedJudges.size > 0 && ` (${selectedJudges.size})`}
+              <span style={styles.filterButtonText}>
+                {selectedJudges.size > 0
+                  ? `${selectedJudges.size} selected`
+                  : 'All judges'}
               </span>
               <ChevronDown
                 size={16}
@@ -245,13 +252,15 @@ export function ResultsPage() {
 
           {/* Question Filter */}
           <div style={styles.filterGroup}>
+            <label style={styles.filterLabel}>Question</label>
             <button
               style={styles.filterButton}
               onClick={() => setShowQuestionFilter(!showQuestionFilter)}
             >
-              <span>
-                Question
-                {selectedQuestions.size > 0 && ` (${selectedQuestions.size})`}
+              <span style={styles.filterButtonText}>
+                {selectedQuestions.size > 0
+                  ? `${selectedQuestions.size} selected`
+                  : 'All questions'}
               </span>
               <ChevronDown
                 size={16}
@@ -286,6 +295,7 @@ export function ResultsPage() {
 
           {/* Verdict Filter */}
           <div style={styles.filterGroup}>
+            <label style={styles.filterLabel}>Verdict</label>
             <select
               style={styles.verdictSelect}
               value={selectedVerdict}
@@ -318,12 +328,42 @@ export function ResultsPage() {
           <table style={styles.table}>
             <thead>
               <tr>
-                <th style={styles.th}>Submission</th>
-                <th style={styles.th}>Question</th>
-                <th style={styles.th}>Judge</th>
-                <th style={styles.th}>Verdict</th>
-                <th style={styles.th}>Reasoning</th>
-                <th style={styles.th}>Created</th>
+                <th style={styles.th}>
+                  <div style={styles.thContent}>
+                    <FileText size={14} />
+                    <span>Submission</span>
+                  </div>
+                </th>
+                <th style={styles.th}>
+                  <div style={styles.thContent}>
+                    <MessageSquare size={14} />
+                    <span>Question</span>
+                  </div>
+                </th>
+                <th style={styles.th}>
+                  <div style={styles.thContent}>
+                    <User size={14} />
+                    <span>Judge</span>
+                  </div>
+                </th>
+                <th style={styles.th}>
+                  <div style={styles.thContent}>
+                    <Award size={14} />
+                    <span>Verdict</span>
+                  </div>
+                </th>
+                <th style={styles.th}>
+                  <div style={styles.thContent}>
+                    <MessageSquare size={14} />
+                    <span>Reasoning</span>
+                  </div>
+                </th>
+                <th style={styles.th}>
+                  <div style={styles.thContent}>
+                    <Calendar size={14} />
+                    <span>Created</span>
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -480,59 +520,75 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#6b7280',
     fontWeight: 500,
   },
-  filtersSection: {
-    backgroundColor: '#f9fafb',
+  filtersCard: {
+    backgroundColor: '#fff',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
-    padding: '16px',
+    padding: '20px',
     marginBottom: '24px',
   },
   filtersHeader: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: '16px',
+    marginBottom: '20px',
   },
   filtersTitle: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    fontSize: '14px',
+    gap: '10px',
+    fontSize: '16px',
     fontWeight: 600,
     color: '#111827',
+    margin: 0,
   },
   clearButton: {
-    padding: '4px 12px',
+    padding: '6px 14px',
     fontSize: '13px',
     fontWeight: 500,
     color: '#4f46e5',
-    backgroundColor: 'transparent',
+    backgroundColor: '#f3f4f6',
     border: 'none',
-    borderRadius: '4px',
+    borderRadius: '6px',
     cursor: 'pointer',
     transition: 'background-color 0.15s',
   },
   filtersRow: {
-    display: 'flex',
-    gap: '12px',
-    flexWrap: 'wrap',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: '16px',
   },
   filterGroup: {
     position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  filterLabel: {
+    fontSize: '13px',
+    fontWeight: 500,
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
   },
   filterButton: {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: '8px',
-    padding: '8px 12px',
+    padding: '10px 12px',
     fontSize: '14px',
-    fontWeight: 500,
-    color: '#374151',
+    color: '#111827',
     backgroundColor: '#fff',
     border: '1px solid #d1d5db',
     borderRadius: '6px',
     cursor: 'pointer',
     transition: 'all 0.15s',
+    textAlign: 'left',
+  },
+  filterButtonText: {
+    flex: 1,
+    fontWeight: 400,
   },
   filterDropdown: {
     position: 'absolute',
@@ -567,15 +623,17 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
   },
   verdictSelect: {
-    padding: '8px 12px',
+    width: '100%',
+    padding: '10px 12px',
     fontSize: '14px',
-    fontWeight: 500,
-    color: '#374151',
+    fontWeight: 400,
+    color: '#111827',
     backgroundColor: '#fff',
     border: '1px solid #d1d5db',
     borderRadius: '6px',
     cursor: 'pointer',
     outline: 'none',
+    transition: 'border-color 0.15s',
   },
   emptyState: {
     padding: '48px',
@@ -595,24 +653,29 @@ const styles: Record<string, React.CSSProperties> = {
   table: {
     width: '100%',
     borderCollapse: 'collapse',
-    fontSize: '14px',
   },
   th: {
     padding: '12px 16px',
     textAlign: 'left',
     backgroundColor: '#f9fafb',
     color: '#6b7280',
-    fontWeight: 600,
+    fontWeight: 500,
     fontSize: '13px',
-    textTransform: 'uppercase',
     borderBottom: '1px solid #e5e7eb',
+  },
+  thContent: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
   },
   tr: {
     borderBottom: '1px solid #f3f4f6',
+    transition: 'background-color 0.15s',
   },
   td: {
     padding: '16px',
-    color: '#374151',
+    color: '#111827',
+    fontSize: '14px',
     verticalAlign: 'top',
   },
   code: {
@@ -621,19 +684,22 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#f3f4f6',
     padding: '2px 6px',
     borderRadius: '4px',
+    color: '#4b5563',
   },
   badge: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
-    padding: '4px 10px',
-    borderRadius: '6px',
+    padding: '6px 12px',
+    borderRadius: '16px',
     fontSize: '13px',
-    fontWeight: 600,
+    fontWeight: 500,
   },
   reasoning: {
     maxWidth: '400px',
     lineHeight: '1.5',
+    color: '#6b7280',
+    fontSize: '13px',
   },
   timestamp: {
     fontSize: '13px',
