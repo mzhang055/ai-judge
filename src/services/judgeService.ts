@@ -3,6 +3,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { createError } from '../lib/errors';
 import type { Judge } from '../types';
 
 /**
@@ -43,10 +44,10 @@ export async function createJudge(input: CreateJudgeInput): Promise<Judge> {
     .single();
 
   if (error) {
-    throw new Error(`Failed to create judge: ${error.message}`);
+    throw createError(`Failed to create judge: ${error.message}`, error);
   }
 
-  return data as Judge;
+  return data;
 }
 
 /**
@@ -63,10 +64,10 @@ export async function getJudge(id: string): Promise<Judge | null> {
     if (error.code === 'PGRST116') {
       return null; // Not found
     }
-    throw new Error(`Failed to fetch judge: ${error.message}`);
+    throw createError(`Failed to fetch judge: ${error.message}`, error);
   }
 
-  return data as Judge;
+  return data;
 }
 
 /**
@@ -87,10 +88,10 @@ export async function listJudges(
   const { data, error } = await query;
 
   if (error) {
-    throw new Error(`Failed to list judges: ${error.message}`);
+    throw createError(`Failed to list judges: ${error.message}`, error);
   }
 
-  return (data as Judge[]) || [];
+  return data || [];
 }
 
 /**
@@ -111,10 +112,10 @@ export async function updateJudge(
     .single();
 
   if (error) {
-    throw new Error(`Failed to update judge: ${error.message}`);
+    throw createError(`Failed to update judge: ${error.message}`, error);
   }
 
-  return data as Judge;
+  return data;
 }
 
 /**
@@ -124,6 +125,6 @@ export async function deleteJudge(id: string): Promise<void> {
   const { error } = await supabase.from('judges').delete().eq('id', id);
 
   if (error) {
-    throw new Error(`Failed to delete judge: ${error.message}`);
+    throw createError(`Failed to delete judge: ${error.message}`, error);
   }
 }

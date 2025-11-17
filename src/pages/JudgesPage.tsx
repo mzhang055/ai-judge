@@ -2,10 +2,13 @@
  * JudgesPage - Main page for managing AI judges
  */
 
-import { useState, useEffect } from 'react';
-import { Plus, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, AlertCircle, ArrowLeft } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { JudgeList } from '../components/JudgeList';
 import { JudgeForm } from '../components/JudgeForm';
+import { getErrorMessage } from '../lib/errors';
 import type { Judge } from '../types';
 import {
   listJudges,
@@ -16,6 +19,7 @@ import {
 } from '../services/judgeService';
 
 export function JudgesPage() {
+  const navigate = useNavigate();
   const [judges, setJudges] = useState<Judge[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,24 +28,26 @@ export function JudgesPage() {
     undefined
   );
   const [deleteConfirm, setDeleteConfirm] = useState<Judge | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  // Load judges on mount
-  useEffect(() => {
-    loadJudges();
-  }, []);
-
-  const loadJudges = async () => {
+  // Load judges with useCallback to prevent unnecessary re-renders
+  const loadJudges = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const data = await listJudges();
       setJudges(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load judges');
+      setError(getErrorMessage(err, 'Failed to load judges'));
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Load judges on mount
+  useEffect(() => {
+    loadJudges();
+  }, [loadJudges]);
 
   const handleCreate = () => {
     setEditingJudge(undefined);
@@ -54,14 +60,36 @@ export function JudgesPage() {
   };
 
   const handleFormSubmit = async (input: CreateJudgeInput) => {
-    if (editingJudge) {
-      // Update existing judge
-      await updateJudge(editingJudge.id, input);
-    } else {
-      // Create new judge
-      await createJudge(input);
+    setActionLoading(true);
+    try {
+      if (editingJudge) {
+        // Update existing judge
+        const updated = await updateJudge(editingJudge.id, input);
+        // Optimistic update
+        setJudges((prev) =>
+          prev.map((j) => (j.id === updated.id ? updated : j))
+        );
+        toast.success(`Judge "${updated.name}" updated successfully!`);
+      } else {
+        // Create new judge
+        const created = await createJudge(input);
+        // Optimistic update
+        setJudges((prev) => [created, ...prev]);
+        toast.success(`Judge "${created.name}" created successfully!`);
+      }
+      setIsFormOpen(false);
+      setEditingJudge(undefined);
+    } catch (err) {
+      const errorMessage = getErrorMessage(
+        err,
+        editingJudge ? 'Failed to update judge' : 'Failed to create judge'
+      );
+      setError(errorMessage);
+      toast.error(errorMessage);
+      throw err; // Re-throw so JudgeForm can handle it
+    } finally {
+      setActionLoading(false);
     }
-    await loadJudges(); // Refresh list
   };
 
   const handleDelete = (judge: Judge) => {
@@ -71,17 +99,35 @@ export function JudgesPage() {
   const confirmDelete = async () => {
     if (!deleteConfirm) return;
 
+    setActionLoading(true);
+    const judgeToDelete = deleteConfirm;
+
     try {
-      await deleteJudge(deleteConfirm.id);
-      await loadJudges(); // Refresh list
+      // Optimistic delete
+      setJudges((prev) => prev.filter((j) => j.id !== judgeToDelete.id));
       setDeleteConfirm(null);
+
+      await deleteJudge(judgeToDelete.id);
+      toast.success(`Judge "${judgeToDelete.name}" deleted successfully!`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete judge');
+      const errorMessage = getErrorMessage(err, 'Failed to delete judge');
+      setError(errorMessage);
+      toast.error(errorMessage);
+      // Rollback on error - reload all judges
+      await loadJudges();
+    } finally {
+      setActionLoading(false);
     }
   };
 
   return (
     <div style={styles.container}>
+      {/* Back button */}
+      <button style={styles.backButton} onClick={() => navigate('/queues')}>
+        <ArrowLeft size={16} />
+        <span>Back to Queues</span>
+      </button>
+
       {/* Header */}
       <div style={styles.header}>
         <div>
@@ -123,10 +169,22 @@ export function JudgesPage() {
       {/* Delete confirmation modal */}
       {deleteConfirm && (
         <>
-          <div style={styles.backdrop} onClick={() => setDeleteConfirm(null)} />
-          <div style={styles.deleteModal}>
-            <h3 style={styles.deleteTitle}>Delete Judge</h3>
-            <p style={styles.deleteText}>
+          <div
+            style={styles.backdrop}
+            onClick={() => setDeleteConfirm(null)}
+            aria-hidden="true"
+          />
+          <div
+            style={styles.deleteModal}
+            role="alertdialog"
+            aria-labelledby="delete-dialog-title"
+            aria-describedby="delete-dialog-description"
+            aria-modal="true"
+          >
+            <h3 id="delete-dialog-title" style={styles.deleteTitle}>
+              Delete Judge
+            </h3>
+            <p id="delete-dialog-description" style={styles.deleteText}>
               Are you sure you want to delete{' '}
               <strong>{deleteConfirm.name}</strong>? This action cannot be
               undone.
@@ -135,11 +193,16 @@ export function JudgesPage() {
               <button
                 style={styles.cancelButton}
                 onClick={() => setDeleteConfirm(null)}
+                disabled={actionLoading}
               >
                 Cancel
               </button>
-              <button style={styles.deleteButton} onClick={confirmDelete}>
-                Delete
+              <button
+                style={styles.deleteButton}
+                onClick={confirmDelete}
+                disabled={actionLoading}
+              >
+                {actionLoading ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>
@@ -154,7 +217,22 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     maxWidth: '1400px',
     margin: '0 auto',
-    padding: '40px 24px',
+    padding: '0 24px 40px',
+  },
+  backButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 12px',
+    fontSize: '14px',
+    fontWeight: 500,
+    color: '#6b7280',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    marginBottom: '16px',
+    transition: 'background-color 0.15s',
   },
   header: {
     display: 'flex',

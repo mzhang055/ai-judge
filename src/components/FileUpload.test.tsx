@@ -94,7 +94,16 @@ describe('FileUpload', () => {
     });
     fireEvent.change(input);
 
-    // Should eventually show success state (may skip intermediate states if fast)
+    // Wait for preview to show
+    await waitFor(() => {
+      expect(screen.getByText(/Preview:/)).toBeInTheDocument();
+    });
+
+    // Click confirm button
+    const confirmButton = screen.getByText('Confirm Upload');
+    fireEvent.click(confirmButton);
+
+    // Should eventually show success state
     await waitFor(() => {
       expect(screen.getByText('Upload Successful')).toBeInTheDocument();
       expect(onUploadComplete).toHaveBeenCalledWith(1);
@@ -204,6 +213,16 @@ describe('FileUpload', () => {
     });
     fireEvent.change(input);
 
+    // Wait for preview to show
+    await waitFor(() => {
+      expect(screen.getByText(/Preview:/)).toBeInTheDocument();
+    });
+
+    // Click confirm button
+    const confirmButton = screen.getByText('Confirm Upload');
+    fireEvent.click(confirmButton);
+
+    // Should show error
     await waitFor(() => {
       expect(screen.getByText('Upload Failed')).toBeInTheDocument();
       expect(onError).toHaveBeenCalledWith(
