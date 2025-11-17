@@ -21,9 +21,9 @@ import type { Submission, UploadStatus } from '../types';
 
 export interface FileUploadProps {
   /** Callback fired when upload completes successfully */
-  onUploadComplete?: (submissionCount: number) => void;
+  onUploadComplete?: ((submissionCount: number) => void) | (() => void);
   /** Callback fired when an error occurs */
-  onError?: (error: string) => void;
+  onError?: ((error: string) => void) | (() => void);
   /** Optional CSS class name */
   className?: string;
 }
@@ -45,10 +45,13 @@ export function FileUpload({
   const [previewData, setPreviewData] = useState<Submission[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const timeoutRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true);
 
-  // Cleanup timeout on unmount
+  // Cleanup timeout and track mounted state
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
+      isMountedRef.current = false;
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
@@ -159,6 +162,9 @@ export function FileUpload({
 
       const savedIds = await saveSubmissions(previewData);
 
+      // Check if still mounted before updating state
+      if (!isMountedRef.current) return;
+
       setUploadStatus({
         status: 'success',
         message: `Successfully uploaded ${savedIds.length} submissions`,
@@ -170,6 +176,7 @@ export function FileUpload({
 
       // Reset after 3 seconds
       timeoutRef.current = setTimeout(() => {
+        if (!isMountedRef.current) return;
         setUploadStatus({ status: 'idle' });
         setPreviewData(null);
         if (fileInputRef.current) {
@@ -177,6 +184,9 @@ export function FileUpload({
         }
       }, 3000);
     } catch (error) {
+      // Check if still mounted before updating state
+      if (!isMountedRef.current) return;
+
       let errorMessage = 'Unknown error occurred';
 
       if (error instanceof Error) {
@@ -205,11 +215,12 @@ export function FileUpload({
   const isProcessing =
     uploadStatus.status === 'validating' || uploadStatus.status === 'uploading';
 
-  // Show preview if data is loaded
+  // Show preview if data is loaded and not in uploading/success/error state
   if (
     previewData &&
     uploadStatus.status !== 'uploading' &&
-    uploadStatus.status !== 'success'
+    uploadStatus.status !== 'success' &&
+    uploadStatus.status !== 'error'
   ) {
     return (
       <div className={`file-upload ${className}`}>

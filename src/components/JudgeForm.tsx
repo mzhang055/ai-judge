@@ -87,16 +87,25 @@ export function JudgeForm({
   return (
     <>
       {/* Backdrop */}
-      <div style={styles.backdrop} onClick={onClose} />
+      <div style={styles.backdrop} onClick={onClose} aria-hidden="true" />
 
       {/* Modal */}
-      <div style={styles.modal}>
+      <div
+        style={styles.modal}
+        role="dialog"
+        aria-labelledby="judge-form-title"
+        aria-modal="true"
+      >
         {/* Header */}
         <div style={styles.header}>
-          <h2 style={styles.title}>
+          <h2 id="judge-form-title" style={styles.title}>
             {judge ? 'Edit Judge' : 'Create New Judge'}
           </h2>
-          <button style={styles.closeButton} onClick={onClose}>
+          <button
+            style={styles.closeButton}
+            onClick={onClose}
+            aria-label="Close dialog"
+          >
             <X size={20} />
           </button>
         </div>
@@ -105,36 +114,42 @@ export function JudgeForm({
         <form onSubmit={handleSubmit} style={styles.form}>
           {/* Error message */}
           {error && (
-            <div style={styles.errorBanner}>
+            <div style={styles.errorBanner} role="alert" aria-live="polite">
               <span>{error}</span>
             </div>
           )}
 
           {/* Name field */}
           <div style={styles.field}>
-            <label style={styles.label}>
+            <label htmlFor="judge-name" style={styles.label}>
               Name <span style={styles.required}>*</span>
             </label>
             <input
+              id="judge-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Strict Grammar Judge"
               style={styles.input}
               disabled={loading}
+              required
+              aria-required="true"
             />
           </div>
 
           {/* Model selection */}
           <div style={styles.field}>
-            <label style={styles.label}>
+            <label htmlFor="judge-model" style={styles.label}>
               Model <span style={styles.required}>*</span>
             </label>
             <select
+              id="judge-model"
               value={modelName}
               onChange={(e) => setModelName(e.target.value)}
               style={styles.select}
               disabled={loading}
+              required
+              aria-required="true"
             >
               {MODEL_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -146,18 +161,22 @@ export function JudgeForm({
 
           {/* System prompt */}
           <div style={styles.field}>
-            <label style={styles.label}>
+            <label htmlFor="judge-prompt" style={styles.label}>
               System Prompt / Rubric <span style={styles.required}>*</span>
             </label>
             <textarea
+              id="judge-prompt"
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
               placeholder="You are an expert judge evaluating annotation quality. Your task is to..."
               rows={8}
               style={styles.textarea}
               disabled={loading}
+              required
+              aria-required="true"
+              aria-describedby="prompt-hint"
             />
-            <p style={styles.hint}>
+            <p id="prompt-hint" style={styles.hint}>
               This prompt will be sent to the AI model along with the submission
               data.
             </p>

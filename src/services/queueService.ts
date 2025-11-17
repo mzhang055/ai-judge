@@ -3,6 +3,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { createError } from '../lib/errors';
 import type { StoredSubmission } from '../types';
 
 /**
@@ -23,7 +24,7 @@ export async function listQueues(): Promise<QueueSummary[]> {
     .select('queue_id, uploaded_at');
 
   if (error) {
-    throw new Error(`Failed to fetch queues: ${error.message}`);
+    throw createError(`Failed to fetch queues: ${error.message}`, error);
   }
 
   if (!data || data.length === 0) {
@@ -69,10 +70,13 @@ export async function getQueueSubmissions(
     .order('created_at', { ascending: false });
 
   if (error) {
-    throw new Error(`Failed to fetch queue submissions: ${error.message}`);
+    throw createError(
+      `Failed to fetch queue submissions: ${error.message}`,
+      error
+    );
   }
 
-  return (data as StoredSubmission[]) || [];
+  return data || [];
 }
 
 /**

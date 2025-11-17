@@ -9,6 +9,7 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router-dom';
+import { useCallback } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { JudgesPage } from './pages/JudgesPage';
 import { QueuesPage } from './pages/QueuesPage';
@@ -21,6 +22,15 @@ function AppContent() {
   const navigate = useNavigate();
   const isDataIngestionPage = location.pathname === '/';
   const showNavigation = !isDataIngestionPage;
+
+  const handleUploadComplete = useCallback(() => {
+    // Successfully uploaded, navigate to queues page
+    navigate('/queues');
+  }, [navigate]);
+
+  const handleUploadError = useCallback(() => {
+    // Error is already displayed in FileUpload component
+  }, []);
 
   return (
     <div className="app">
@@ -87,14 +97,8 @@ function AppContent() {
               path="/"
               element={
                 <FileUpload
-                  onUploadComplete={(count) => {
-                    console.log(`Successfully uploaded ${count} submissions`);
-                    // Navigate to queues page after successful upload
-                    navigate('/queues');
-                  }}
-                  onError={(error) => {
-                    console.error('Upload error:', error);
-                  }}
+                  onUploadComplete={handleUploadComplete}
+                  onError={handleUploadError}
                 />
               }
             />

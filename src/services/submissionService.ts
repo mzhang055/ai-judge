@@ -3,6 +3,7 @@
  * Validates and persists submissions to Supabase
  */
 import { supabase } from '../lib/supabase';
+import { createError } from '../lib/errors';
 import type { Submission, ValidationResult, StoredSubmission } from '../types';
 
 /**
@@ -114,7 +115,7 @@ export async function saveSubmissions(
     .select('id');
 
   if (error) {
-    throw new Error(`Failed to save submissions: ${error.message}`);
+    throw createError(`Failed to save submissions: ${error.message}`, error);
   }
 
   return data?.map((r) => r.id) || [];
@@ -133,7 +134,7 @@ export async function getSubmissionsByQueue(
     .order('created_at', { ascending: false });
 
   if (error) {
-    throw new Error(`Failed to fetch submissions: ${error.message}`);
+    throw createError(`Failed to fetch submissions: ${error.message}`, error);
   }
 
   return (data || []).map((record) => ({
@@ -157,7 +158,7 @@ export async function getSubmissionCount(queueId: string): Promise<number> {
     .eq('queue_id', queueId);
 
   if (error) {
-    throw new Error(`Failed to count submissions: ${error.message}`);
+    throw createError(`Failed to count submissions: ${error.message}`, error);
   }
 
   return count || 0;

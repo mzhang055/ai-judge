@@ -3,6 +3,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { createError } from '../lib/errors';
 import type { JudgeAssignment } from '../types';
 
 /**
@@ -37,10 +38,10 @@ export async function assignJudge(
     .single();
 
   if (error) {
-    throw new Error(`Failed to assign judge: ${error.message}`);
+    throw createError(`Failed to assign judge: ${error.message}`, error);
   }
 
-  return data as JudgeAssignment;
+  return data;
 }
 
 /**
@@ -53,7 +54,7 @@ export async function unassignJudge(assignmentId: string): Promise<void> {
     .eq('id', assignmentId);
 
   if (error) {
-    throw new Error(`Failed to unassign judge: ${error.message}`);
+    throw createError(`Failed to unassign judge: ${error.message}`, error);
   }
 }
 
@@ -71,12 +72,13 @@ export async function getAssignmentsForQuestion(
     .eq('question_id', questionId);
 
   if (error) {
-    throw new Error(
-      `Failed to fetch assignments for question: ${error.message}`
+    throw createError(
+      `Failed to fetch assignments for question: ${error.message}`,
+      error
     );
   }
 
-  return (data as JudgeAssignment[]) || [];
+  return data || [];
 }
 
 /**
@@ -91,10 +93,13 @@ export async function listAssignmentsForQueue(
     .eq('queue_id', queueId);
 
   if (error) {
-    throw new Error(`Failed to fetch assignments for queue: ${error.message}`);
+    throw createError(
+      `Failed to fetch assignments for queue: ${error.message}`,
+      error
+    );
   }
 
-  return (data as JudgeAssignment[]) || [];
+  return data || [];
 }
 
 /**
@@ -113,6 +118,9 @@ export async function unassignJudgeFromQuestion(
     .eq('judge_id', judgeId);
 
   if (error) {
-    throw new Error(`Failed to unassign judge from question: ${error.message}`);
+    throw createError(
+      `Failed to unassign judge from question: ${error.message}`,
+      error
+    );
   }
 }
