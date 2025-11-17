@@ -14,6 +14,7 @@ import { FileUpload } from './components/FileUpload';
 import { JudgesPage } from './pages/JudgesPage';
 import { QueuesPage } from './pages/QueuesPage';
 import { QueuePage } from './pages/QueuePage';
+import { ResultsPage } from './pages/ResultsPage';
 import logo from './assets/besimple-logo.png';
 import './App.css';
 
@@ -66,6 +67,7 @@ function AppContent() {
             />
             <Route path="/queues" element={<QueuesPage />} />
             <Route path="/queues/:queueId" element={<QueuePage />} />
+            <Route path="/queues/:queueId/results" element={<ResultsPage />} />
             <Route path="/judges" element={<JudgesPage />} />
           </Routes>
         </main>

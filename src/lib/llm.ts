@@ -77,11 +77,22 @@ export interface LLMCallOptions {
 }
 
 /**
+ * OpenAI API error response structure
+ */
+interface OpenAIErrorResponse {
+  error?: {
+    message?: string;
+    type?: string;
+  };
+  retryAfter?: string;
+}
+
+/**
  * Parse error from OpenAI API response
  */
 function parseOpenAIError(
   status: number,
-  errorData: any,
+  errorData: OpenAIErrorResponse,
   statusText: string
 ): LLMError {
   const errorMessage = errorData?.error?.message || statusText;

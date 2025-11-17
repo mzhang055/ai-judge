@@ -34,6 +34,7 @@ export async function createJudge(input: CreateJudgeInput): Promise<Judge> {
     .insert({
       name: input.name,
       system_prompt: input.system_prompt,
+      model_name: 'gpt-5o-mini', // All judges use GPT-5o-mini model
       is_active: input.is_active ?? true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

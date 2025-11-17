@@ -5,7 +5,13 @@
 import { supabase } from '../lib/supabase';
 import { callLLM, LLMError, LLMErrorType } from '../lib/llm';
 import { createError } from '../lib/errors';
-import type { Evaluation, Judge, StoredSubmission } from '../types';
+import type {
+  Evaluation,
+  EvaluationRun,
+  Judge,
+  JudgeSummary,
+  StoredSubmission,
+} from '../types';
 import { getQueueSubmissions } from './queueService';
 import { listAssignmentsForQueue } from './judgeAssignmentService';
 import { listJudges } from './judgeService';
@@ -134,7 +140,8 @@ function getErrorMessage(error: unknown): string {
 async function evaluateSingle(
   submission: StoredSubmission,
   questionId: string,
-  judge: Judge
+  judge: Judge,
+  runId: string
 ): Promise<Evaluation> {
   try {
     // Create prompt
@@ -170,6 +177,7 @@ async function evaluateSingle(
         judge_name: judge.name, // Denormalized for history
         verdict: result.verdict,
         reasoning: result.reasoning,
+        run_id: runId,
       })
       .select()
       .single();
@@ -193,6 +201,7 @@ async function evaluateSingle(
         judge_name: judge.name,
         verdict: 'inconclusive',
         reasoning: `Error during evaluation: ${errorMessage}`,
+        run_id: runId,
       })
       .select()
       .single();
@@ -306,6 +315,56 @@ export async function runEvaluations(
   console.log('[Evaluations] Total evaluations planned:', totalEvaluations);
   console.log('[Evaluations] Evaluation plan:', evaluationPlan);
 
+  // Build judges summary for this run
+  const judgeQuestionMap = new Map<string, string[]>();
+  for (const plan of evaluationPlan) {
+    const existing = judgeQuestionMap.get(plan.judge.id) || [];
+    if (!existing.includes(plan.questionId)) {
+      existing.push(plan.questionId);
+      judgeQuestionMap.set(plan.judge.id, existing);
+    }
+  }
+
+  const judgesSummary: JudgeSummary[] = Array.from(judgeQuestionMap.entries())
+    .map(([judgeId, questionIds]) => {
+      const judge = judgeMap.get(judgeId);
+      if (!judge) return null;
+      return {
+        id: judge.id,
+        name: judge.name,
+        model_name: 'gpt-4o-mini', // Default model
+        question_ids: questionIds,
+      };
+    })
+    .filter((j): j is JudgeSummary => j !== null);
+
+  // Create evaluation run record
+  const { data: runData, error: runError } = await supabase
+    .from('evaluation_runs')
+    .insert({
+      queue_id: queueId,
+      judges_summary: judgesSummary,
+      total_evaluations: 0, // Will update at the end
+      pass_count: 0,
+      fail_count: 0,
+      inconclusive_count: 0,
+    })
+    .select()
+    .single();
+
+  if (runError || !runData) {
+    throw createError(
+      `Failed to create evaluation run: ${runError?.message}`,
+      runError
+    );
+  }
+
+  const runId = runData.id;
+  console.log('[Evaluations] Created run:', runId);
+
+  // Note: We do NOT delete old evaluations - they stay linked to their original run_id
+  // This preserves full history for each evaluation run
+
   // Run evaluations in parallel batches for efficiency
   let completed = 0;
   let failed = 0;
@@ -327,7 +386,12 @@ export async function runEvaluations(
       });
 
       try {
-        await evaluateSingle(plan.submission, plan.questionId, plan.judge);
+        await evaluateSingle(
+          plan.submission,
+          plan.questionId,
+          plan.judge,
+          runId
+        );
         console.log(
           '[Evaluations] ✓ Success:',
           plan.submission.id,
@@ -374,6 +438,36 @@ export async function runEvaluations(
     completed,
     failed,
   });
+
+  // Update run statistics
+  const { data: finalEvaluations } = await supabase
+    .from('evaluations')
+    .select('verdict')
+    .eq('run_id', runId);
+
+  if (finalEvaluations) {
+    const passCount = finalEvaluations.filter(
+      (e) => e.verdict === 'pass'
+    ).length;
+    const failCount = finalEvaluations.filter(
+      (e) => e.verdict === 'fail'
+    ).length;
+    const inconclusiveCount = finalEvaluations.filter(
+      (e) => e.verdict === 'inconclusive'
+    ).length;
+
+    await supabase
+      .from('evaluation_runs')
+      .update({
+        total_evaluations: finalEvaluations.length,
+        pass_count: passCount,
+        fail_count: failCount,
+        inconclusive_count: inconclusiveCount,
+      })
+      .eq('id', runId);
+  }
+
+  console.log('[Evaluations] Run complete:', { runId, completed, failed });
 
   return { completed, failed, total: totalEvaluations };
 }
@@ -430,4 +524,76 @@ export async function getEvaluationStats(
   const passRate = total > 0 ? (pass / total) * 100 : 0;
 
   return { total, pass, fail, inconclusive, passRate };
+}
+
+/**
+ * Get all evaluation runs for a queue
+ */
+export async function getEvaluationRuns(
+  queueId: string
+): Promise<EvaluationRun[]> {
+  const { data, error } = await supabase
+    .from('evaluation_runs')
+    .select('*')
+    .eq('queue_id', queueId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw createError(
+      `Failed to fetch evaluation runs: ${error.message}`,
+      error
+    );
+  }
+
+  return data || [];
+}
+
+/**
+ * Get the latest evaluation run for a queue
+ */
+export async function getLatestEvaluationRun(
+  queueId: string
+): Promise<EvaluationRun | null> {
+  const { data, error } = await supabase
+    .from('evaluation_runs')
+    .select('*')
+    .eq('queue_id', queueId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      // No rows found
+      return null;
+    }
+    throw createError(
+      `Failed to fetch latest evaluation run: ${error.message}`,
+      error
+    );
+  }
+
+  return data;
+}
+
+/**
+ * Get evaluations for a specific run
+ */
+export async function getEvaluationsByRun(
+  runId: string
+): Promise<Evaluation[]> {
+  const { data, error } = await supabase
+    .from('evaluations')
+    .select('*')
+    .eq('run_id', runId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw createError(
+      `Failed to fetch evaluations for run: ${error.message}`,
+      error
+    );
+  }
+
+  return data || [];
 }

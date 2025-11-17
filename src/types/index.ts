@@ -88,6 +88,32 @@ export interface Evaluation {
   verdict: Verdict;
   reasoning: string;
   created_at: string;
+  run_id?: string; // Links to evaluation run session
+}
+
+/**
+ * Judge summary for evaluation run
+ */
+export interface JudgeSummary {
+  id: string;
+  name: string;
+  model_name: string;
+  question_ids: string[];
+}
+
+/**
+ * Evaluation run session tracking
+ */
+export interface EvaluationRun {
+  id: string;
+  queue_id: string;
+  created_at: string;
+  judges_summary: JudgeSummary[];
+  total_evaluations: number;
+  pass_count: number;
+  fail_count: number;
+  inconclusive_count: number;
+  pass_rate?: number; // Computed field
 }
 
 /**
