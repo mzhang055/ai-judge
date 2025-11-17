@@ -216,7 +216,7 @@ export function JudgeAssignment({
                   >
                     <div style={styles.judgeInfo}>
                       <span style={styles.judgeName}>{judge.name}</span>
-                      <span style={styles.judgeModel}>{judge.model_name}</span>
+                      <span style={styles.judgeModel}>GPT-5-mini</span>
                     </div>
                   </button>
                 ))}

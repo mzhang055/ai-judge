@@ -50,18 +50,12 @@ export interface StoredSubmission extends Submission {
 
 /**
  * AI Judge configuration
+ * Note: Always uses GPT-5-mini model
  */
 export interface Judge {
   id: string;
   name: string;
   system_prompt: string;
-  model_name:
-    | 'gpt-4'
-    | 'gpt-3.5-turbo'
-    | 'claude-3-opus'
-    | 'claude-3-sonnet'
-    | 'gemini-pro'
-    | string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
