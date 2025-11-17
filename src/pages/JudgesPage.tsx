@@ -3,7 +3,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, AlertCircle, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { JudgeList } from '../components/JudgeList';
 import { JudgeForm } from '../components/JudgeForm';
@@ -18,6 +19,7 @@ import {
 } from '../services/judgeService';
 
 export function JudgesPage() {
+  const navigate = useNavigate();
   const [judges, setJudges] = useState<Judge[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,6 +122,12 @@ export function JudgesPage() {
 
   return (
     <div style={styles.container}>
+      {/* Back button */}
+      <button style={styles.backButton} onClick={() => navigate('/queues')}>
+        <ArrowLeft size={16} />
+        <span>Back to Queues</span>
+      </button>
+
       {/* Header */}
       <div style={styles.header}>
         <div>
@@ -209,7 +217,22 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     maxWidth: '1400px',
     margin: '0 auto',
-    padding: '40px 24px',
+    padding: '0 24px 40px',
+  },
+  backButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 12px',
+    fontSize: '14px',
+    fontWeight: 500,
+    color: '#6b7280',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    marginBottom: '16px',
+    transition: 'background-color 0.15s',
   },
   header: {
     display: 'flex',

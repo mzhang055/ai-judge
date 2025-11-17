@@ -5,7 +5,6 @@ import {
   BrowserRouter,
   Routes,
   Route,
-  Link,
   useLocation,
   useNavigate,
 } from 'react-router-dom';
@@ -22,7 +21,6 @@ function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const isDataIngestionPage = location.pathname === '/';
-  const showNavigation = !isDataIngestionPage;
 
   const handleUploadComplete = useCallback(() => {
     // Successfully uploaded, navigate to queues page
@@ -37,59 +35,22 @@ function AppContent() {
     <div className="app">
       <div
         className={
-          showNavigation
-            ? 'container container--wide'
-            : 'container container--centered'
+          isDataIngestionPage
+            ? 'container container--centered'
+            : 'container container--wide'
         }
       >
         <header
           className={
-            showNavigation
-              ? 'header header--horizontal'
-              : 'header header--centered'
+            isDataIngestionPage
+              ? 'header header--centered'
+              : 'header header--horizontal'
           }
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             <img src={logo} alt="BeSimple Logo" className="logo" />
             <h1>AI Judge</h1>
           </div>
-
-          {/* Navigation - show on all pages except data ingestion */}
-          {showNavigation && (
-            <nav style={styles.nav}>
-              <Link
-                to="/"
-                style={{
-                  ...styles.navLink,
-                  ...(location.pathname === '/' ? styles.navLinkActive : {}),
-                }}
-              >
-                Data Ingestion
-              </Link>
-              <Link
-                to="/queues"
-                style={{
-                  ...styles.navLink,
-                  ...(location.pathname.startsWith('/queues')
-                    ? styles.navLinkActive
-                    : {}),
-                }}
-              >
-                Queues
-              </Link>
-              <Link
-                to="/judges"
-                style={{
-                  ...styles.navLink,
-                  ...(location.pathname === '/judges'
-                    ? styles.navLinkActive
-                    : {}),
-                }}
-              >
-                Judges
-              </Link>
-            </nav>
-          )}
         </header>
 
         <main className="main">
@@ -147,29 +108,5 @@ function App() {
     </BrowserRouter>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  nav: {
-    display: 'flex',
-    gap: '8px',
-    padding: '4px',
-    backgroundColor: '#f3f4f6',
-    borderRadius: '8px',
-  },
-  navLink: {
-    padding: '8px 16px',
-    fontSize: '14px',
-    fontWeight: 500,
-    color: '#6b7280',
-    textDecoration: 'none',
-    borderRadius: '6px',
-    transition: 'all 0.15s',
-  },
-  navLinkActive: {
-    backgroundColor: '#fff',
-    color: '#4f46e5',
-    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-  },
-};
 
 export default App;

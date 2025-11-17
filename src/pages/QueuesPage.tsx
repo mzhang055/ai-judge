@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Folder, AlertCircle, ChevronRight } from 'lucide-react';
+import { Folder, AlertCircle, ChevronRight, Settings } from 'lucide-react';
 import { listQueues, type QueueSummary } from '../services/queueService';
 
 export function QueuesPage() {
@@ -59,6 +59,10 @@ export function QueuesPage() {
             View and manage submission queues for evaluation
           </p>
         </div>
+        <button style={styles.manageButton} onClick={() => navigate('/judges')}>
+          <Settings size={16} />
+          <span>Manage Judges</span>
+        </button>
       </div>
 
       {/* Error banner */}
@@ -130,7 +134,27 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '14px',
   },
   header: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: '24px',
     marginBottom: '32px',
+  },
+  manageButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '10px 16px',
+    fontSize: '14px',
+    fontWeight: 500,
+    color: '#4f46e5',
+    backgroundColor: '#fff',
+    border: '1px solid #e0e7ff',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+    flexShrink: 0,
   },
   title: {
     fontSize: '28px',

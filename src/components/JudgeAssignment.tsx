@@ -52,10 +52,49 @@ export function JudgeAssignment({
     }
   }, [queueId, questionId]);
 
+  // Check for inactive judges and remove them
+  const checkAndRemoveInactiveJudges = useCallback(async () => {
+    const allJudges = await listJudges(); // Get all judges (including inactive)
+    const activeJudgeIds = new Set(
+      allJudges.filter((j) => j.is_active).map((j) => j.id)
+    );
+
+    for (const assignment of assignments) {
+      if (!activeJudgeIds.has(assignment.judge_id)) {
+        // Judge is inactive, remove assignment
+        const inactiveJudge = allJudges.find(
+          (j) => j.id === assignment.judge_id
+        );
+        const judgeName = inactiveJudge?.name || 'Unknown Judge';
+
+        try {
+          await unassignJudgeFromQuestion(
+            queueId,
+            questionId,
+            assignment.judge_id
+          );
+          toast.error(`Judge "${judgeName}" is inactive. It has been removed.`);
+        } catch (err) {
+          console.error('Failed to remove inactive judge:', err);
+        }
+      }
+    }
+
+    // Reload assignments to reflect changes
+    await loadAssignments();
+  }, [assignments, queueId, questionId, loadAssignments]);
+
   useEffect(() => {
     loadJudges();
     loadAssignments();
   }, [loadJudges, loadAssignments]);
+
+  useEffect(() => {
+    // Check for inactive judges after assignments and judges are loaded
+    if (assignments.length > 0 && judges.length > 0) {
+      checkAndRemoveInactiveJudges();
+    }
+  }, [assignments.length, judges.length, checkAndRemoveInactiveJudges]);
 
   useEffect(() => {
     // Update assigned judge IDs when assignments change

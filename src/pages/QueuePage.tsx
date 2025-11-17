@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Settings } from 'lucide-react';
 import { JudgeAssignment } from '../components/JudgeAssignment';
 import { getErrorMessage } from '../lib/errors';
 import {
@@ -86,12 +86,22 @@ export function QueuePage() {
           <ArrowLeft size={16} />
           <span>Back to Queues</span>
         </button>
-        <div style={styles.titleSection}>
-          <h1 style={styles.title}>Queue: {queueId}</h1>
-          <p style={styles.subtitle}>
-            {submissions.length} submission{submissions.length !== 1 ? 's' : ''}{' '}
-            • {questions.length} question{questions.length !== 1 ? 's' : ''}
-          </p>
+        <div style={styles.titleRow}>
+          <div style={styles.titleSection}>
+            <h1 style={styles.title}>Queue: {queueId}</h1>
+            <p style={styles.subtitle}>
+              {submissions.length} submission
+              {submissions.length !== 1 ? 's' : ''} • {questions.length}{' '}
+              question{questions.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <button
+            style={styles.manageButton}
+            onClick={() => navigate('/judges')}
+          >
+            <Settings size={16} />
+            <span>Manage Judges</span>
+          </button>
         </div>
       </div>
 
@@ -164,8 +174,29 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '16px',
     transition: 'background-color 0.15s',
   },
+  titleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '24px',
+  },
   titleSection: {
-    marginBottom: '8px',
+    flex: 1,
+  },
+  manageButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '10px 16px',
+    fontSize: '14px',
+    fontWeight: 500,
+    color: '#4f46e5',
+    backgroundColor: '#fff',
+    border: '1px solid #e0e7ff',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
   },
   title: {
     fontSize: '24px',
