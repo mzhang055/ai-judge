@@ -15,6 +15,7 @@ import {
   Filter,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import logo from '../assets/besimple-logo.png';
 import { getErrorMessage } from '../lib/errors';
 import {
   getReviewQueue,
@@ -124,21 +125,26 @@ export function HumanReviewQueue() {
 
   return (
     <div style={pageStyles.container}>
-      {/* Back button */}
-      <button style={pageStyles.backButton} onClick={() => navigate('/queues')}>
-        <ArrowLeft size={16} />
-        <span>Back to Queues</span>
-      </button>
-
       {/* Header */}
-      <div style={pageStyles.header}>
-        <div>
+      <header style={pageStyles.header}>
+        <div style={pageStyles.headerLeft}>
+          <img src={logo} alt="BeSimple" style={pageStyles.logo} />
           <h1 style={pageStyles.title}>Human Review Queue</h1>
-          <p style={pageStyles.subtitle}>
-            Review inconclusive AI verdicts and make final decisions
-          </p>
         </div>
-      </div>
+        <button
+          onClick={() => navigate('/')}
+          style={pageStyles.backButton}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#f3f4f6';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'white';
+          }}
+        >
+          <ArrowLeft size={20} />
+          <span>Back to Home</span>
+        </button>
+      </header>
 
       {/* Error display */}
       {error && (
@@ -318,10 +324,10 @@ export function HumanReviewQueue() {
                       onClick={() => handleReviewClick(item)}
                       style={pageStyles.reviewButton}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#4338ca';
+                        e.currentTarget.style.backgroundColor = '#2563eb';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#4f46e5';
+                        e.currentTarget.style.backgroundColor = '#3b82f6';
                       }}
                     >
                       Review Now →
@@ -352,94 +358,97 @@ import { ClipboardList } from 'lucide-react';
 // Styles
 const pageStyles = {
   container: {
-    maxWidth: '1400px',
-    margin: '0 auto',
-    padding: '0 24px 40px',
+    minHeight: '100vh',
+    backgroundColor: '#f9fafb',
+    padding: '20px',
   },
   loadingContainer: {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: '48px',
+    minHeight: '100vh',
+    fontSize: '18px',
     color: '#6b7280',
-    fontSize: '14px',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '24px',
+    padding: '20px',
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+  },
+  logo: {
+    width: '40px',
+    height: '40px',
+  },
+  title: {
+    fontSize: '24px',
+    fontWeight: '600',
+    color: '#111827',
+    margin: 0,
   },
   backButton: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    padding: '8px 12px',
+    padding: '10px 16px',
+    backgroundColor: 'white',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
     fontSize: '14px',
-    fontWeight: 500,
-    color: '#6b7280',
-    backgroundColor: 'transparent',
-    border: 'none',
-    borderRadius: '6px',
+    color: '#374151',
     cursor: 'pointer',
-    marginBottom: '16px',
-    transition: 'background-color 0.15s',
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: '32px',
-  },
-  title: {
-    fontSize: '28px',
-    fontWeight: 600,
-    color: '#111827',
-    margin: '0 0 4px 0',
-  },
-  subtitle: {
-    fontSize: '14px',
-    color: '#6b7280',
-    margin: 0,
+    transition: 'background-color 0.2s',
   },
   errorBanner: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    padding: '12px 16px',
-    backgroundColor: '#fee2e2',
-    color: '#991b1b',
+    padding: '16px',
+    backgroundColor: '#fef2f2',
+    border: '1px solid #fecaca',
     borderRadius: '8px',
-    marginBottom: '24px',
-    fontSize: '14px',
+    color: '#991b1b',
+    marginBottom: '20px',
   },
   statsContainer: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-    gap: '12px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: '16px',
     marginBottom: '24px',
   },
   statCard: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    padding: '16px',
-    backgroundColor: '#fff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    transition: 'box-shadow 0.15s',
+    gap: '16px',
+    padding: '20px',
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
   },
   statIcon: {
-    width: '40px',
-    height: '40px',
-    borderRadius: '6px',
+    width: '48px',
+    height: '48px',
+    borderRadius: '8px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
   },
   statValue: {
-    fontSize: '24px',
-    fontWeight: '600',
+    fontSize: '28px',
+    fontWeight: '700',
     color: '#111827',
-    lineHeight: 1,
   },
   statLabel: {
-    fontSize: '13px',
+    fontSize: '14px',
     color: '#6b7280',
     marginTop: '4px',
   },
@@ -488,21 +497,21 @@ const pageStyles = {
     cursor: 'pointer',
   },
   listContainer: {
-    marginTop: '24px',
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    padding: '24px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
   },
   emptyState: {
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '64px 32px',
+    padding: '60px 20px',
     textAlign: 'center' as const,
-    backgroundColor: '#f9fafb',
-    borderRadius: '12px',
-    border: '1px solid #e5e7eb',
   },
   emptyTitle: {
-    fontSize: '18px',
+    fontSize: '20px',
     fontWeight: '600',
     color: '#111827',
     margin: '0 0 8px 0',
@@ -515,14 +524,14 @@ const pageStyles = {
   itemsList: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '12px',
+    gap: '16px',
   },
   reviewItem: {
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     padding: '20px',
-    backgroundColor: '#fff',
-    transition: 'all 0.15s',
+    backgroundColor: '#fafafa',
+    transition: 'box-shadow 0.2s',
   },
   itemHeader: {
     display: 'flex',
@@ -642,13 +651,13 @@ const pageStyles = {
   },
   reviewButton: {
     padding: '10px 20px',
-    backgroundColor: '#4f46e5',
-    color: '#fff',
+    backgroundColor: '#3b82f6',
+    color: 'white',
     border: 'none',
     borderRadius: '8px',
     fontSize: '14px',
-    fontWeight: 500,
+    fontWeight: '500',
     cursor: 'pointer',
-    transition: 'background-color 0.15s',
+    transition: 'background-color 0.2s',
   },
 } as const;
