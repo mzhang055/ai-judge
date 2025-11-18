@@ -37,6 +37,13 @@ const CONFIG_OPTIONS: ConfigOption[] = [
     category: 'answer',
   },
   {
+    key: 'include_submission_metadata',
+    label: 'All Metadata Fields',
+    description:
+      'Enables all submission metadata below (overrides individual settings)',
+    category: 'metadata',
+  },
+  {
     key: 'include_queue_id',
     label: 'Queue ID',
     description: 'Identifier for the submission queue',

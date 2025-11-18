@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { Judge, PromptConfiguration } from '../types';
 import type { CreateJudgeInput } from '../services/judgeService';
 import { PromptConfigEditor } from './PromptConfigEditor';
@@ -64,20 +65,33 @@ export function JudgeForm({
 
     // Validation
     if (!name.trim()) {
-      setError('Name is required');
+      const errorMsg = 'Name is required';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
     if (!systemPrompt.trim()) {
-      setError('System prompt is required');
+      const errorMsg = 'System prompt is required';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
     // Validate that at least one field is selected
+    if (!promptConfig || Object.keys(promptConfig).length === 0) {
+      const errorMsg = 'Prompt configuration is required';
+      setError(errorMsg);
+      toast.error(errorMsg);
+      return;
+    }
+
     const hasAtLeastOneField = Object.values(promptConfig).some(
       (v) => v === true
     );
     if (!hasAtLeastOneField) {
-      setError('At least one prompt field must be selected');
+      const errorMsg = 'At least one prompt field must be selected';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
