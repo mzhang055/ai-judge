@@ -15,6 +15,7 @@ import { listJudges } from '../services/judgeService';
 import { getErrorMessage } from '../lib/errors';
 import { RunHistorySidebar } from '../components/results/RunHistorySidebar';
 import { PassRateCard } from '../components/results/PassRateCard';
+import { PassRateChart } from '../components/results/PassRateChart';
 import { FiltersBar } from '../components/results/FiltersBar';
 import { ResultsTable } from '../components/results/ResultsTable';
 import { styles } from './ResultsPage.styles';
@@ -235,6 +236,14 @@ export function ResultsPage() {
               currentRun={currentRun}
               allRuns={allRuns}
             />
+
+            {/* Charts */}
+            {evaluations.length > 0 && (
+              <PassRateChart
+                evaluations={filteredEvaluations}
+                judges={judges}
+              />
+            )}
 
             {/* Filters */}
             <FiltersBar
