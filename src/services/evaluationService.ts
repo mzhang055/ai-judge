@@ -92,24 +92,74 @@ async function createEvaluationMessages(
     content: judge.system_prompt,
   };
 
-  const userText = `Please evaluate the following submission:
+  // Get prompt configuration (default to all true if not specified)
+  const config = judge.prompt_config || {
+    include_question_text: true,
+    include_question_type: true,
+    include_answer: true,
+    include_submission_metadata: true,
+    include_queue_id: true,
+    include_labeling_task_id: true,
+    include_created_at: true,
+  };
 
-**Question ID:** ${questionId}
-**Question Type:** ${question.data.questionType}
-**Question Text:** ${question.data.questionText}
+  // Build user message based on configuration
+  let userTextParts: string[] = ['Please evaluate the following submission:\n'];
 
-**Answer:** ${JSON.stringify(answer, null, 2)}
+  // Question fields
+  userTextParts.push(`**Question ID:** ${questionId}`);
 
-**Submission Metadata:**
-- Submission ID: ${submission.id}
-- Queue ID: ${submission.queueId}
-- Labeling Task ID: ${submission.labelingTaskId}
-- Created At: ${submission.createdAt}
+  if (config.include_question_type) {
+    userTextParts.push(`**Question Type:** ${question.data.questionType}`);
+  }
 
-Please provide your evaluation in the following format:
+  if (config.include_question_text) {
+    userTextParts.push(`**Question Text:** ${question.data.questionText}`);
+  }
 
-Verdict: [pass/fail/inconclusive]
-Reasoning: [Your detailed reasoning here]`;
+  // Answer field
+  if (config.include_answer) {
+    userTextParts.push(`\n**Answer:** ${JSON.stringify(answer, null, 2)}`);
+  }
+
+  // Submission metadata
+  const includeAnyMetadata =
+    config.include_submission_metadata ||
+    config.include_queue_id ||
+    config.include_labeling_task_id ||
+    config.include_created_at;
+
+  if (includeAnyMetadata) {
+    const metadataParts: string[] = [];
+
+    // Always include submission ID if we're showing any metadata
+    metadataParts.push(`- Submission ID: ${submission.id}`);
+
+    if (config.include_queue_id || config.include_submission_metadata) {
+      metadataParts.push(`- Queue ID: ${submission.queueId}`);
+    }
+
+    if (config.include_labeling_task_id || config.include_submission_metadata) {
+      metadataParts.push(`- Labeling Task ID: ${submission.labelingTaskId}`);
+    }
+
+    if (config.include_created_at || config.include_submission_metadata) {
+      metadataParts.push(`- Created At: ${submission.createdAt}`);
+    }
+
+    if (metadataParts.length > 0) {
+      userTextParts.push('\n**Submission Metadata:**');
+      userTextParts.push(...metadataParts);
+    }
+  }
+
+  userTextParts.push(
+    '\nPlease provide your evaluation in the following format:\n'
+  );
+  userTextParts.push('Verdict: [pass/fail/inconclusive]');
+  userTextParts.push('Reasoning: [Your detailed reasoning here]');
+
+  const userText = userTextParts.join('\n');
 
   // Check if submission has image attachments
   const attachments = submission.attachments || [];

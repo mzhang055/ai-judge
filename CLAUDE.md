@@ -21,10 +21,11 @@ Building an AI-powered evaluation system that automatically reviews human annota
 - ✅ Drag-and-drop support with visual feedback
 - ✅ Comprehensive validation with detailed error messages
 
-### 3.2 AI Judge Definitions
-- CRUD interface for judges
-- Each judge stores: name, system_prompt/rubric, target_model_name, is_active flag
-- Must persist in Supabase and survive page reloads
+### 3.2 AI Judge Definitions ✅ COMPLETED
+- ✅ CRUD interface for judges
+- ✅ Each judge stores: name, system_prompt/rubric, target_model_name, is_active flag, prompt_config
+- ✅ **Configurable prompt fields** - Control which data (question text, answer, metadata) is sent to LLM
+- ✅ Must persist in Supabase and survive page reloads
 
 ### 3.3 Assigning Judges
 - UI to select one or more judges per question within a queue
@@ -64,6 +65,7 @@ judges (
   system_prompt TEXT,
   model_name TEXT,
   is_active BOOLEAN,
+  prompt_config JSONB,
   created_at TIMESTAMP,
   updated_at TIMESTAMP
 )
@@ -145,8 +147,8 @@ evaluations (
 6. **Judgment** - Clear reasoning for scope cuts or decisions
 
 ## Bonus Features (Optional)
-- File attachments (screenshots, PDFs) forwarded to LLM API
-- Configurable prompt fields (include/exclude question text, answers, metadata)
+- ✅ **File attachments** (screenshots, PDFs) forwarded to LLM API - IMPLEMENTED
+- ✅ **Configurable prompt fields** (include/exclude question text, answers, metadata) - IMPLEMENTED
 - Animated charts (pass-rate by judge)
 - Other relevant features
 
@@ -177,10 +179,16 @@ evaluations (
   - [x] Comprehensive test suite (9/9 passing)
   - [x] Clean UI with BeSimple branding
   - [x] Lucide icons integration
-- [ ] Judge CRUD (3.2)
-- [ ] Assignment UI (3.3)
-- [ ] Evaluation runner (3.4)
-- [ ] Results view (3.5)
+- [x] **Judge CRUD (3.2) - COMPLETE**
+  - [x] PromptConfigEditor component for field selection
+  - [x] Category toggles and individual field controls
+  - [x] Validation with toast notifications
+  - [x] Comprehensive test suite (18/18 passing)
+- [x] Assignment UI (3.3)
+- [x] Evaluation runner (3.4)
+- [x] Results view (3.5)
+- [x] **Bonus: File attachments**
+- [x] **Bonus: Configurable prompt fields**
 
 ## Architectural Decisions (3.1)
 1. **Testing Strategy**: Vitest + React Testing Library for component tests

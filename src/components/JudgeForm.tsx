@@ -4,8 +4,10 @@
 
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import type { Judge } from '../types';
+import toast from 'react-hot-toast';
+import type { Judge, PromptConfiguration } from '../types';
 import type { CreateJudgeInput } from '../services/judgeService';
+import { PromptConfigEditor } from './PromptConfigEditor';
 
 interface JudgeFormProps {
   judge?: Judge; // If provided, we're editing; otherwise creating
@@ -13,6 +15,17 @@ interface JudgeFormProps {
   onClose: () => void;
   onSubmit: (input: CreateJudgeInput) => Promise<void>;
 }
+
+// Default prompt configuration
+const DEFAULT_PROMPT_CONFIG: PromptConfiguration = {
+  include_question_text: true,
+  include_question_type: true,
+  include_answer: true,
+  include_submission_metadata: true,
+  include_queue_id: true,
+  include_labeling_task_id: true,
+  include_created_at: true,
+};
 
 export function JudgeForm({
   judge,
@@ -23,6 +36,9 @@ export function JudgeForm({
   const [name, setName] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [promptConfig, setPromptConfig] = useState<PromptConfiguration>(
+    DEFAULT_PROMPT_CONFIG
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,11 +48,13 @@ export function JudgeForm({
       setName(judge.name);
       setSystemPrompt(judge.system_prompt);
       setIsActive(judge.is_active);
+      setPromptConfig(judge.prompt_config || DEFAULT_PROMPT_CONFIG);
     } else {
       // Reset form for new judge
       setName('');
       setSystemPrompt('');
       setIsActive(true);
+      setPromptConfig(DEFAULT_PROMPT_CONFIG);
     }
     setError(null);
   }, [judge, isOpen]);
@@ -47,11 +65,33 @@ export function JudgeForm({
 
     // Validation
     if (!name.trim()) {
-      setError('Name is required');
+      const errorMsg = 'Name is required';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
     if (!systemPrompt.trim()) {
-      setError('System prompt is required');
+      const errorMsg = 'System prompt is required';
+      setError(errorMsg);
+      toast.error(errorMsg);
+      return;
+    }
+
+    // Validate that at least one field is selected
+    if (!promptConfig || Object.keys(promptConfig).length === 0) {
+      const errorMsg = 'Prompt configuration is required';
+      setError(errorMsg);
+      toast.error(errorMsg);
+      return;
+    }
+
+    const hasAtLeastOneField = Object.values(promptConfig).some(
+      (v) => v === true
+    );
+    if (!hasAtLeastOneField) {
+      const errorMsg = 'At least one prompt field must be selected';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
@@ -61,6 +101,7 @@ export function JudgeForm({
         name: name.trim(),
         system_prompt: systemPrompt.trim(),
         is_active: isActive,
+        prompt_config: promptConfig,
       });
       onClose();
     } catch (err) {
@@ -147,6 +188,15 @@ export function JudgeForm({
               This prompt will be sent to the AI model along with the submission
               data.
             </p>
+          </div>
+
+          {/* Prompt Configuration */}
+          <div style={styles.field}>
+            <PromptConfigEditor
+              config={promptConfig}
+              onChange={setPromptConfig}
+              disabled={loading}
+            />
           </div>
 
           {/* Active toggle */}

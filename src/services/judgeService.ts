@@ -4,7 +4,7 @@
 
 import { supabase } from '../lib/supabase';
 import { createError } from '../lib/errors';
-import type { Judge } from '../types';
+import type { Judge, PromptConfiguration } from '../types';
 
 /**
  * Input type for creating a new judge (omits generated fields)
@@ -14,6 +14,7 @@ export interface CreateJudgeInput {
   name: string;
   system_prompt: string;
   is_active?: boolean;
+  prompt_config?: PromptConfiguration;
 }
 
 /**
@@ -23,6 +24,7 @@ export interface UpdateJudgeInput {
   name?: string;
   system_prompt?: string;
   is_active?: boolean;
+  prompt_config?: PromptConfiguration;
 }
 
 /**
@@ -36,6 +38,7 @@ export async function createJudge(input: CreateJudgeInput): Promise<Judge> {
       system_prompt: input.system_prompt,
       model_name: 'gpt-5o-mini', // All judges use GPT-5o-mini model
       is_active: input.is_active ?? true,
+      prompt_config: input.prompt_config, // Optional prompt configuration
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })

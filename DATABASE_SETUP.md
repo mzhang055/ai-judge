@@ -22,13 +22,16 @@ CREATE TABLE IF NOT EXISTS submissions (
   created_at BIGINT,
   questions JSONB NOT NULL,
   answers JSONB NOT NULL,
+  attachments JSONB DEFAULT '[]'::jsonb,
   uploaded_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_submissions_queue_id ON submissions(queue_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_uploaded_at ON submissions(uploaded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_submissions_has_attachments ON submissions ((jsonb_array_length(attachments) > 0));
 
 COMMENT ON TABLE submissions IS 'Stores submission data uploaded from JSON files';
+COMMENT ON COLUMN submissions.attachments IS 'Array of file attachments: [{file_name, file_path, mime_type, size_bytes, uploaded_at}]';
 
 
 -- -----------------------------------------------------------------------------
@@ -41,13 +44,24 @@ CREATE TABLE IF NOT EXISTS judges (
   system_prompt TEXT NOT NULL,
   model_name TEXT DEFAULT 'gpt-5-mini',
   is_active BOOLEAN DEFAULT true,
+  prompt_config JSONB DEFAULT '{
+    "include_question_text": true,
+    "include_question_type": true,
+    "include_answer": true,
+    "include_submission_metadata": true,
+    "include_queue_id": true,
+    "include_labeling_task_id": true,
+    "include_created_at": true
+  }'::jsonb,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_judges_is_active ON judges(is_active);
+CREATE INDEX IF NOT EXISTS idx_judges_prompt_config ON judges USING GIN (prompt_config);
 
 COMMENT ON TABLE judges IS 'Stores AI judge definitions with system prompts and configuration';
+COMMENT ON COLUMN judges.prompt_config IS 'Configuration for which fields to include in the evaluation prompt sent to the LLM';
 
 
 -- -----------------------------------------------------------------------------
@@ -122,6 +136,42 @@ CREATE INDEX IF NOT EXISTS idx_evaluations_created_at ON evaluations(created_at 
 
 COMMENT ON TABLE evaluations IS 'Stores individual evaluation results from AI judges';
 COMMENT ON COLUMN evaluations.run_id IS 'Links evaluation to specific run session for history tracking';
+
+
+-- =============================================================================
+-- STORAGE BUCKET FOR FILE ATTACHMENTS (Optional)
+-- =============================================================================
+
+-- Create storage bucket for file attachments (images, PDFs)
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'submission-attachments',
+  'submission-attachments',
+  false,
+  52428800, -- 50 MB
+  ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'application/pdf']
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage policies for anonymous access (works with SUPABASE_ANON_KEY)
+DROP POLICY IF EXISTS "Allow anon uploads" ON storage.objects;
+DROP POLICY IF EXISTS "Allow anon reads" ON storage.objects;
+DROP POLICY IF EXISTS "Allow anon deletes" ON storage.objects;
+
+CREATE POLICY "Allow anon uploads"
+ON storage.objects FOR INSERT
+TO anon, authenticated
+WITH CHECK (bucket_id = 'submission-attachments');
+
+CREATE POLICY "Allow anon reads"
+ON storage.objects FOR SELECT
+TO anon, authenticated
+USING (bucket_id = 'submission-attachments');
+
+CREATE POLICY "Allow anon deletes"
+ON storage.objects FOR DELETE
+TO anon, authenticated
+USING (bucket_id = 'submission-attachments');
 
 
 -- =============================================================================
@@ -205,76 +255,19 @@ WHERE table_name = 'evaluations' AND column_name = 'run_id';
 - **Cascade Deletes**: Foreign keys maintain referential integrity
 - **History Preservation**: Evaluations are never deleted, only linked to runs
 
-## File Attachments Support (Optional Bonus Feature)
+## File Attachments Support
 
-If you want to enable file attachments (images, PDFs) for multimodal AI evaluation, follow these steps:
+The main schema above includes support for file attachments (images, PDFs) for multimodal AI evaluation.
 
-### 1. Create Storage Bucket
+**What's included:**
+- `attachments` column on `submissions` table (JSONB array)
+- Supabase Storage bucket: `submission-attachments`
+- Storage policies for anonymous access (works with SUPABASE_ANON_KEY)
+- Support for images (PNG, JPG, GIF, WEBP) and PDFs up to 50MB
 
-Go to Supabase Dashboard → Storage → New bucket:
-- **Name**: `submission-attachments`
-- **Public**: Off (keep private)
-- **File size limit**: 50 MB
+**Use case:** When submissions include screenshots or documents, the AI judge can analyze them visually during evaluation (e.g., verifying if a human correctly labeled an image).
 
-Or run this SQL:
-```sql
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-  'submission-attachments',
-  'submission-attachments',
-  false,
-  52428800,
-  ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'application/pdf']
-)
-ON CONFLICT (id) DO NOTHING;
-```
-
-### 2. Add Attachments Column
-
-```sql
-ALTER TABLE submissions
-ADD COLUMN IF NOT EXISTS attachments JSONB DEFAULT '[]'::jsonb;
-
-COMMENT ON COLUMN submissions.attachments IS 'Array of file attachments: [{file_name, file_path, mime_type, size_bytes, uploaded_at}]';
-
-CREATE INDEX IF NOT EXISTS idx_submissions_has_attachments
-ON submissions ((jsonb_array_length(attachments) > 0));
-```
-
-### 3. Configure Storage Policies
-
-**Important:** Use `anon` role since the app uses `SUPABASE_ANON_KEY`
-
-```sql
--- Drop existing policies if they exist
-DROP POLICY IF EXISTS "Allow authenticated uploads" ON storage.objects;
-DROP POLICY IF EXISTS "Allow authenticated reads" ON storage.objects;
-DROP POLICY IF EXISTS "Allow authenticated deletes" ON storage.objects;
-DROP POLICY IF EXISTS "Allow anon uploads" ON storage.objects;
-DROP POLICY IF EXISTS "Allow anon reads" ON storage.objects;
-DROP POLICY IF EXISTS "Allow anon deletes" ON storage.objects;
-
--- Allow anonymous and authenticated users to upload attachments
-CREATE POLICY "Allow anon uploads"
-ON storage.objects FOR INSERT
-TO anon, authenticated
-WITH CHECK (bucket_id = 'submission-attachments');
-
--- Allow anonymous and authenticated users to read attachments
-CREATE POLICY "Allow anon reads"
-ON storage.objects FOR SELECT
-TO anon, authenticated
-USING (bucket_id = 'submission-attachments');
-
--- Allow anonymous and authenticated users to delete attachments
-CREATE POLICY "Allow anon deletes"
-ON storage.objects FOR DELETE
-TO anon, authenticated
-USING (bucket_id = 'submission-attachments');
-```
-
-### 4. Verify Setup
-
+**Verification queries:**
 ```sql
 -- Check attachments column exists
 SELECT column_name, data_type, column_default
@@ -292,20 +285,11 @@ FROM pg_policies
 WHERE tablename = 'objects' AND policyname LIKE 'Allow anon%';
 ```
 
-**What this adds:**
-- Supabase Storage bucket for file attachments
-- `attachments` column on `submissions` table
-- Storage policies for anonymous access (works with SUPABASE_ANON_KEY)
-- Support for images (PNG, JPG, GIF, WEBP) and PDFs up to 50MB
-
-**Use case:** When submissions include screenshots or documents, the AI judge can analyze them visually during evaluation (e.g., verifying if a human correctly labeled an image).
-
 
 ## Next Steps
 
-1. Copy the SQL above
+1. Copy the complete SQL schema from the top of this file (includes all tables, indexes, and file attachment support)
 2. Go to Supabase Dashboard → SQL Editor
-3. Paste and run the SQL
+3. Paste and run the SQL to create all tables, storage bucket, and policies
 4. Run the verification queries to confirm setup
-5. (Optional) Run ATTACHMENT_MIGRATION.sql for file attachment support
-6. Start using the application!
+5. Start using the application!

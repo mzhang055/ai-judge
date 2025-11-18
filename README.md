@@ -19,6 +19,7 @@ AI Judge is an internal annotation platform where AI judges automatically review
 - **AI Judge Definitions (3.2)** - CRUD interface for managing judges
   - Create, edit, and delete AI judges
   - Configure system prompts and rubrics
+  - **Configurable prompt fields** - Choose which data (question text, answer, metadata) to include in LLM prompts
   - Toggle active/inactive status
   - Persistent storage in Supabase
 
@@ -159,6 +160,10 @@ ai-judge/
 3. Configure each judge with:
    - Name (e.g., "Grammar Judge", "Accuracy Judge")
    - System prompt/rubric for evaluation
+   - **Prompt field configuration** - Select which data fields to include in evaluation prompts:
+     - Question fields (question text, question type)
+     - Answer fields
+     - Metadata (queue ID, labeling task ID, timestamps)
    - Active/inactive status
 4. Edit or delete judges as needed
 
@@ -293,7 +298,7 @@ npm test
 
 ## Bonus Features
 
-### ✅ File Attachments (Implemented!)
+### File Attachments
 
 **Feature**: Upload images and PDFs alongside submissions for multimodal AI evaluation.
 
@@ -304,9 +309,10 @@ npm test
 4. The AI can visually verify human annotations (e.g., "Is the sky blue in this photo?")
 
 **Setup**:
-1. Run the SQL migration in `ATTACHMENT_MIGRATION.sql` via Supabase Dashboard
-2. Supported formats: PNG, JPG, GIF, WEBP, PDF (max 50MB each)
-3. During JSON upload preview, click "Add Files" for each submission
+1. File attachment support is included in the main database schema in `DATABASE_SETUP.md`
+2. Follow the "File Attachments Support" section in DATABASE_SETUP.md to enable this feature
+3. Supported formats: PNG, JPG, GIF, WEBP, PDF (max 50MB each)
+4. During JSON upload preview, click "Add Files" for each submission
 
 **Use cases**:
 - UI/design review tasks (verify annotations on screenshots)
@@ -319,27 +325,26 @@ npm test
 - Images sent as signed URLs to LLM API (GPT5-mini)
 - Attachment metadata stored in `submissions.attachments` JSONB column
 
----
+### Configurable Prompt Fields
 
-## Future Enhancements
+**Feature**: Control which data fields are included in evaluation prompts sent to AI judges.
 
-Additional potential improvements for production use:
+**How it works**:
+1. When creating/editing a judge, configure which fields to include in prompts:
+   - Question text, question type
+   - Answer data
+   - Submission metadata (queue ID, labeling task ID, timestamps)
+2. The evaluation service builds prompts based on your configuration
+3. AI judges only see the data you've selected
 
-1. **Configurable Prompts**: Template fields for including/excluding specific data
-2. **Export Functionality**: CSV/JSON export for evaluation results
-3. **Advanced Analytics**: Charts and graphs for pass rates over time
-4. **User Authentication**: Role-based access control
-5. **Audit Logs**: Track all user actions for compliance
-6. **Bulk Operations**: Import/export judges, bulk edit assignments
-7. **API Endpoints**: REST API for programmatic access
-8. **Webhooks**: Notifications when evaluations complete
-9. **Multi-LLM Support**: Switch between OpenAI, Anthropic, Gemini per judge
-10. **Confidence Scores**: Track AI confidence in verdicts
+**Use cases**:
+- **Blind evaluation**: Exclude metadata to prevent bias
+- **Answer-only grading**: Evaluate answers without question context
+- **Minimal context**: Reduce token usage by excluding unnecessary fields
+- **Custom workflows**: Tailor evaluation context for specific use cases
 
-## License
-
-Internal project - All rights reserved
-
-## Contact
-
-For questions or issues, please contact the development team.
+**Technical details**:
+- Configuration stored in `judges.prompt_config` JSONB column
+- UI provides category toggles and individual field controls
+- Defaults to all fields enabled for backward compatibility
+- At least one field must be selected (enforced by validation)
