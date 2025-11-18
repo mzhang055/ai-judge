@@ -13,9 +13,27 @@ interface FiltersBarProps {
   selectedJudges: Set<string>;
   selectedQuestions: Set<string>;
   selectedVerdict: 'all' | 'pass' | 'fail' | 'inconclusive';
+  selectedReviewStatus: 'all' | 'ai_only' | 'human_reviewed';
+  selectedHumanVerdict:
+    | 'all'
+    | 'pass'
+    | 'fail'
+    | 'bad_data'
+    | 'ambiguous_question'
+    | 'insufficient_context';
   onToggleJudge: (judgeId: string) => void;
   onToggleQuestion: (questionId: string) => void;
   onVerdictChange: (verdict: 'all' | 'pass' | 'fail' | 'inconclusive') => void;
+  onReviewStatusChange: (status: 'all' | 'ai_only' | 'human_reviewed') => void;
+  onHumanVerdictChange: (
+    verdict:
+      | 'all'
+      | 'pass'
+      | 'fail'
+      | 'bad_data'
+      | 'ambiguous_question'
+      | 'insufficient_context'
+  ) => void;
   onClearFilters: () => void;
 }
 
@@ -25,9 +43,13 @@ export function FiltersBar({
   selectedJudges,
   selectedQuestions,
   selectedVerdict,
+  selectedReviewStatus,
+  selectedHumanVerdict,
   onToggleJudge,
   onToggleQuestion,
   onVerdictChange,
+  onReviewStatusChange,
+  onHumanVerdictChange,
   onClearFilters,
 }: FiltersBarProps) {
   const [showJudgeFilter, setShowJudgeFilter] = useState(false);
@@ -36,7 +58,9 @@ export function FiltersBar({
   const hasActiveFilters =
     selectedJudges.size > 0 ||
     selectedQuestions.size > 0 ||
-    selectedVerdict !== 'all';
+    selectedVerdict !== 'all' ||
+    selectedReviewStatus !== 'all' ||
+    selectedHumanVerdict !== 'all';
 
   return (
     <div style={styles.filtersBar}>
@@ -103,7 +127,7 @@ export function FiltersBar({
         )}
       </div>
 
-      {/* Verdict Filter */}
+      {/* AI Verdict Filter */}
       <div style={styles.filterGroup}>
         <select
           style={styles.filterDropdownButton}
@@ -114,12 +138,61 @@ export function FiltersBar({
             )
           }
         >
-          <option value="all">All Verdicts</option>
-          <option value="pass">Pass</option>
-          <option value="fail">Fail</option>
-          <option value="inconclusive">Inconclusive</option>
+          <option value="all">All AI Verdicts</option>
+          <option value="pass">AI: Pass</option>
+          <option value="fail">AI: Fail</option>
+          <option value="inconclusive">AI: Inconclusive</option>
         </select>
       </div>
+
+      {/* Review Status Filter */}
+      <div style={styles.filterGroup}>
+        <select
+          style={styles.filterDropdownButton}
+          value={selectedReviewStatus}
+          onChange={(e) =>
+            onReviewStatusChange(
+              e.target.value as 'all' | 'ai_only' | 'human_reviewed'
+            )
+          }
+        >
+          <option value="all">All Items</option>
+          <option value="ai_only">AI Only</option>
+          <option value="human_reviewed">Human Reviewed</option>
+        </select>
+      </div>
+
+      {/* Human Verdict Filter (only show if human_reviewed is selected) */}
+      {selectedReviewStatus === 'human_reviewed' && (
+        <div style={styles.filterGroup}>
+          <select
+            style={styles.filterDropdownButton}
+            value={selectedHumanVerdict}
+            onChange={(e) =>
+              onHumanVerdictChange(
+                e.target.value as
+                  | 'all'
+                  | 'pass'
+                  | 'fail'
+                  | 'bad_data'
+                  | 'ambiguous_question'
+                  | 'insufficient_context'
+              )
+            }
+          >
+            <option value="all">All Human Verdicts</option>
+            <option value="pass">Human: Pass</option>
+            <option value="fail">Human: Fail</option>
+            <option value="bad_data">Human: Bad Data</option>
+            <option value="ambiguous_question">
+              Human: Ambiguous Question
+            </option>
+            <option value="insufficient_context">
+              Human: Insufficient Context
+            </option>
+          </select>
+        </div>
+      )}
 
       {hasActiveFilters && (
         <button style={styles.clearFiltersButton} onClick={onClearFilters}>

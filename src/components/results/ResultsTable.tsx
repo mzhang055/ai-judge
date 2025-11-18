@@ -104,32 +104,143 @@ export function ResultsTable({
           </tr>
         </thead>
         <tbody>
-          {evaluations.map((evaluation) => (
-            <tr key={evaluation.id} style={styles.tr}>
-              <td style={styles.td}>
-                <code style={styles.code}>{evaluation.submission_id}</code>
-              </td>
-              <td style={styles.td}>
-                <code style={styles.code}>{evaluation.question_id}</code>
-              </td>
-              <td style={styles.td}>{evaluation.judge_name}</td>
-              <td style={styles.td}>
-                <VerdictBadge verdict={evaluation.verdict} />
-              </td>
-              <td style={styles.td}>
-                <div style={styles.reasoning}>{evaluation.reasoning}</div>
-              </td>
-              <td style={styles.td}>
-                <div style={styles.timestamp}>
-                  {new Date(evaluation.created_at).toLocaleDateString()}
-                  <br />
-                  {new Date(evaluation.created_at).toLocaleTimeString()}
-                </div>
-              </td>
-            </tr>
-          ))}
+          {evaluations.map((evaluation) => {
+            const hasHumanReview =
+              evaluation.review_status === 'completed' &&
+              evaluation.human_verdict;
+            const rowStyle = hasHumanReview
+              ? { ...styles.tr, borderLeft: '4px solid #6366f1' }
+              : styles.tr;
+
+            return (
+              <tr key={evaluation.id} style={rowStyle}>
+                <td style={styles.td}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    {hasHumanReview && (
+                      <div
+                        style={{
+                          backgroundColor: '#6366f1',
+                          color: '#fff',
+                          fontSize: '10px',
+                          fontWeight: 600,
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                        }}
+                        title="Human Reviewed"
+                      >
+                        HR
+                      </div>
+                    )}
+                    <code style={styles.code}>{evaluation.submission_id}</code>
+                  </div>
+                </td>
+                <td style={styles.td}>
+                  <code style={styles.code}>{evaluation.question_id}</code>
+                </td>
+                <td style={styles.td}>{evaluation.judge_name}</td>
+                <td style={styles.td}>
+                  <VerdictCell evaluation={evaluation} />
+                </td>
+                <td style={styles.td}>
+                  <ReasoningCell evaluation={evaluation} />
+                </td>
+                <td style={styles.td}>
+                  <div style={styles.timestamp}>
+                    {new Date(evaluation.created_at).toLocaleDateString()}
+                    <br />
+                    {new Date(evaluation.created_at).toLocaleTimeString()}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function VerdictCell({ evaluation }: { evaluation: Evaluation }) {
+  const hasHumanReview =
+    evaluation.review_status === 'completed' && evaluation.human_verdict;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {/* AI Verdict */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <span style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>
+          AI Judge:
+        </span>
+        <VerdictBadge verdict={evaluation.verdict} />
+      </div>
+
+      {/* Human Review Verdict (if exists) */}
+      {hasHumanReview && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <span style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>
+            Human Review:
+          </span>
+          <HumanVerdictBadge verdict={evaluation.human_verdict!} />
+          {evaluation.reviewed_by && (
+            <span
+              style={{
+                fontSize: '11px',
+                color: '#9ca3af',
+                fontStyle: 'italic',
+              }}
+            >
+              by {evaluation.reviewed_by}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReasoningCell({ evaluation }: { evaluation: Evaluation }) {
+  const hasHumanReview =
+    evaluation.review_status === 'completed' && evaluation.human_reasoning;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* AI Reasoning */}
+      <div>
+        <div
+          style={{
+            fontSize: '11px',
+            color: '#6b7280',
+            fontWeight: 500,
+            marginBottom: '4px',
+          }}
+        >
+          AI Reasoning:
+        </div>
+        <div style={styles.reasoning}>{evaluation.reasoning}</div>
+      </div>
+
+      {/* Human Reasoning (if exists) */}
+      {hasHumanReview && (
+        <div>
+          <div
+            style={{
+              fontSize: '11px',
+              color: '#6b7280',
+              fontWeight: 500,
+              marginBottom: '4px',
+            }}
+          >
+            Human Review Notes:
+          </div>
+          <div style={styles.reasoning}>{evaluation.human_reasoning}</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -176,6 +287,70 @@ function VerdictBadge({ verdict }: { verdict: string }) {
     >
       {icon}
       <span style={{ textTransform: 'capitalize' }}>{verdict}</span>
+    </div>
+  );
+}
+
+function HumanVerdictBadge({ verdict }: { verdict: string }) {
+  const getVerdictStyle = () => {
+    switch (verdict) {
+      case 'pass':
+        return {
+          color: '#059669',
+          backgroundColor: '#d1fae5',
+          icon: <CheckCircle size={14} />,
+          label: 'Pass',
+        };
+      case 'fail':
+        return {
+          color: '#dc2626',
+          backgroundColor: '#fee2e2',
+          icon: <XCircle size={14} />,
+          label: 'Fail',
+        };
+      case 'bad_data':
+        return {
+          color: '#7c3aed',
+          backgroundColor: '#ede9fe',
+          icon: <AlertCircle size={14} />,
+          label: 'Bad Data',
+        };
+      case 'ambiguous_question':
+        return {
+          color: '#ea580c',
+          backgroundColor: '#ffedd5',
+          icon: <HelpCircle size={14} />,
+          label: 'Ambiguous Question',
+        };
+      case 'insufficient_context':
+        return {
+          color: '#0284c7',
+          backgroundColor: '#e0f2fe',
+          icon: <AlertCircle size={14} />,
+          label: 'Insufficient Context',
+        };
+      default:
+        return {
+          color: '#6b7280',
+          backgroundColor: '#f3f4f6',
+          icon: <HelpCircle size={14} />,
+          label: verdict,
+        };
+    }
+  };
+
+  const { color, backgroundColor, icon, label } = getVerdictStyle();
+
+  return (
+    <div
+      style={{
+        ...styles.badge,
+        color,
+        backgroundColor,
+      }}
+    >
+      {icon}
+      <span>{label}</span>
     </div>
   );
 }
