@@ -3,18 +3,21 @@
  */
 
 import { useState } from 'react';
-import type { EvaluationRun } from '../../types';
+import type { EvaluationRun, Evaluation } from '../../types';
 
 interface RunHistorySidebarProps {
   runs: EvaluationRun[];
   currentRunId: string | null;
   onRunSelect: (run: EvaluationRun) => void;
+  currentRunEvaluations?: Evaluation[]; // For future use if needed
+  currentRunPassRate?: number; // Recalculated pass rate with human verdicts
 }
 
 export function RunHistorySidebar({
   runs,
   currentRunId,
   onRunSelect,
+  currentRunPassRate,
 }: RunHistorySidebarProps) {
   const runsWithEvals = runs.filter((r) => r.total_evaluations > 0);
 
@@ -29,11 +32,19 @@ export function RunHistorySidebar({
         <div style={styles.runsList}>
           {runsWithEvals.map((run) => {
             const originalIndex = runs.findIndex((r) => r.id === run.id);
+            const isCurrentRun = currentRunId === run.id;
+            // Use recalculated pass rate for current run, otherwise use stored rate
+            const displayPassRate =
+              isCurrentRun && currentRunPassRate !== undefined
+                ? currentRunPassRate
+                : run.pass_rate || 0;
+
             return (
               <RunItem
                 key={run.id}
                 run={run}
-                isActive={currentRunId === run.id}
+                isActive={isCurrentRun}
+                passRate={displayPassRate}
                 label={
                   originalIndex === 0
                     ? 'Latest'
@@ -52,11 +63,12 @@ export function RunHistorySidebar({
 interface RunItemProps {
   run: EvaluationRun;
   isActive: boolean;
+  passRate: number;
   label: string;
   onClick: () => void;
 }
 
-function RunItem({ run, isActive, label, onClick }: RunItemProps) {
+function RunItem({ run, isActive, passRate, label, onClick }: RunItemProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -77,9 +89,7 @@ function RunItem({ run, isActive, label, onClick }: RunItemProps) {
       <div style={styles.runItemContent}>
         {/* Score first */}
         <div style={styles.runItemStats}>
-          <div style={styles.runItemPassRate}>
-            {run.pass_rate?.toFixed(1) || 0}%
-          </div>
+          <div style={styles.runItemPassRate}>{passRate.toFixed(1)}%</div>
           <div style={styles.runItemCount}>
             {run.total_evaluations} eval{run.total_evaluations !== 1 ? 's' : ''}
           </div>

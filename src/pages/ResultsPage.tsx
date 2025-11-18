@@ -298,6 +298,8 @@ export function ResultsPage() {
           runs={allRuns}
           currentRunId={currentRun?.id || null}
           onRunSelect={switchToRun}
+          currentRunEvaluations={evaluations}
+          currentRunPassRate={passRate}
         />
 
         {/* Main Content */}
