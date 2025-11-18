@@ -106,6 +106,7 @@ export async function saveSubmissions(
     created_at: sub.createdAt,
     questions: sub.questions,
     answers: sub.answers,
+    attachments: sub.attachments || [],
     uploaded_at: new Date().toISOString(),
   }));
 
@@ -144,6 +145,7 @@ export async function getSubmissionsByQueue(
     createdAt: record.created_at,
     questions: record.questions,
     answers: record.answers,
+    attachments: record.attachments || [],
     uploaded_at: record.uploaded_at,
   }));
 }

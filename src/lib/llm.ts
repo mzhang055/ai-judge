@@ -52,9 +52,23 @@ export class LLMError extends Error {
   }
 }
 
+/**
+ * Content part for multimodal messages (text or image)
+ */
+export interface LLMContentPart {
+  type: 'text' | 'image_url';
+  text?: string;
+  image_url?: {
+    url: string; // Can be URL or base64 data URL
+  };
+}
+
+/**
+ * LLM message - can be simple string or multimodal array
+ */
 export interface LLMMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string;
+  content: string | LLMContentPart[];
 }
 
 export interface LLMResponse {
@@ -332,4 +346,64 @@ async function callOpenAI(options: LLMCallOptions): Promise<LLMResponse> {
  */
 export async function callLLM(options: LLMCallOptions): Promise<LLMResponse> {
   return callOpenAI(options);
+}
+
+/**
+ * Helper: Build a multimodal user message with text and image attachments
+ *
+ * @param text - The text content
+ * @param imageUrls - Array of image URLs (can be https:// URLs or data: URLs with base64)
+ * @returns LLMMessage with multimodal content
+ *
+ * @example
+ * ```ts
+ * const message = buildMultimodalMessage(
+ *   "Does this image show a blue sky?",
+ *   ["https://example.com/sky.jpg"]
+ * );
+ * ```
+ */
+export function buildMultimodalMessage(
+  text: string,
+  imageUrls: string[]
+): LLMMessage {
+  const contentParts: LLMContentPart[] = [
+    { type: 'text', text },
+    ...imageUrls.map((url) => ({
+      type: 'image_url' as const,
+      image_url: { url },
+    })),
+  ];
+
+  return {
+    role: 'user',
+    content: contentParts,
+  };
+}
+
+/**
+ * Helper: Check if a file attachment is an image (supported by vision models)
+ *
+ * @param mimeType - MIME type of the attachment
+ * @returns true if the file is a supported image type
+ */
+export function isImageAttachment(mimeType: string): boolean {
+  const supportedImageTypes = [
+    'image/png',
+    'image/jpeg',
+    'image/jpg',
+    'image/gif',
+    'image/webp',
+  ];
+  return supportedImageTypes.includes(mimeType.toLowerCase());
+}
+
+/**
+ * Helper: Check if a file attachment is a PDF
+ *
+ * @param mimeType - MIME type of the attachment
+ * @returns true if the file is a PDF
+ */
+export function isPdfAttachment(mimeType: string): boolean {
+  return mimeType.toLowerCase() === 'application/pdf';
 }
