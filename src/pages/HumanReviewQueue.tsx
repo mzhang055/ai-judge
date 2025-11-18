@@ -10,12 +10,8 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  ChevronDown,
-  ChevronUp,
-  Filter,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import logo from '../assets/besimple-logo.png';
 import { getErrorMessage } from '../lib/errors';
 import {
   getReviewQueue,
@@ -24,6 +20,7 @@ import {
   type ReviewQueueStats,
 } from '../services/humanReviewService';
 import { ReviewModal } from '../components/ReviewModal';
+import { ReviewFiltersBar } from '../components/ReviewFiltersBar';
 import type { HumanReviewQueueItemWithContext, QueueStatus } from '../types';
 
 export function HumanReviewQueue() {
@@ -44,7 +41,6 @@ export function HumanReviewQueue() {
     'pending'
   );
   const [availableQueueIds, setAvailableQueueIds] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
 
   const loadReviewQueue = useCallback(async () => {
     try {
@@ -102,6 +98,11 @@ export function HumanReviewQueue() {
     setSelectedItem(null);
   };
 
+  const handleClearFilters = () => {
+    setSelectedQueueId('');
+    setSelectedStatus('');
+  };
+
   const getVerdictIcon = (verdict: string) => {
     switch (verdict) {
       case 'pass':
@@ -125,31 +126,26 @@ export function HumanReviewQueue() {
 
   return (
     <div style={pageStyles.container}>
-      {/* Header */}
-      <header style={pageStyles.header}>
-        <div style={pageStyles.headerLeft}>
-          <img src={logo} alt="BeSimple" style={pageStyles.logo} />
-          <h1 style={pageStyles.title}>Human Review Queue</h1>
-        </div>
-        <button
-          onClick={() => navigate('/')}
-          style={pageStyles.backButton}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#f3f4f6';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'white';
-          }}
-        >
-          <ArrowLeft size={20} />
-          <span>Back to Home</span>
-        </button>
-      </header>
+      {/* Back button */}
+      <button style={pageStyles.backButton} onClick={() => navigate('/queues')}>
+        <ArrowLeft size={16} />
+        <span>Back to Queues</span>
+      </button>
 
-      {/* Error display */}
+      {/* Header */}
+      <div style={pageStyles.header}>
+        <div>
+          <h1 style={pageStyles.title}>Human Review Queue</h1>
+          <p style={pageStyles.subtitle}>
+            Review inconclusive AI verdicts and make final decisions
+          </p>
+        </div>
+      </div>
+
+      {/* Error banner */}
       {error && (
         <div style={pageStyles.errorBanner}>
-          <AlertCircle size={20} />
+          <AlertCircle size={16} />
           <span>{error}</span>
         </div>
       )}
@@ -163,17 +159,7 @@ export function HumanReviewQueue() {
             </div>
             <div>
               <div style={pageStyles.statValue}>{stats.pending}</div>
-              <div style={pageStyles.statLabel}>Pending</div>
-            </div>
-          </div>
-
-          <div style={pageStyles.statCard}>
-            <div style={{ ...pageStyles.statIcon, backgroundColor: '#dbeafe' }}>
-              <ClipboardList size={24} style={{ color: '#1e40af' }} />
-            </div>
-            <div>
-              <div style={pageStyles.statValue}>{stats.in_progress}</div>
-              <div style={pageStyles.statLabel}>In Progress</div>
+              <div style={pageStyles.statLabel}>Pending Review</div>
             </div>
           </div>
 
@@ -183,65 +169,31 @@ export function HumanReviewQueue() {
             </div>
             <div>
               <div style={pageStyles.statValue}>{stats.completed}</div>
-              <div style={pageStyles.statLabel}>Completed</div>
+              <div style={pageStyles.statLabel}>Reviewed</div>
+            </div>
+          </div>
+
+          <div style={pageStyles.statCard}>
+            <div style={{ ...pageStyles.statIcon, backgroundColor: '#e0e7ff' }}>
+              <AlertCircle size={24} style={{ color: '#4338ca' }} />
+            </div>
+            <div>
+              <div style={pageStyles.statValue}>{stats.total}</div>
+              <div style={pageStyles.statLabel}>Total</div>
             </div>
           </div>
         </div>
       )}
 
       {/* Filters */}
-      <div style={pageStyles.filtersSection}>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          style={pageStyles.filterToggle}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#f3f4f6';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'white';
-          }}
-        >
-          <Filter size={16} />
-          <span>Filters</span>
-          {showFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </button>
-
-        {showFilters && (
-          <div style={pageStyles.filtersContainer}>
-            <div style={pageStyles.filterGroup}>
-              <label style={pageStyles.filterLabel}>Queue ID:</label>
-              <select
-                value={selectedQueueId}
-                onChange={(e) => setSelectedQueueId(e.target.value)}
-                style={pageStyles.filterSelect}
-              >
-                <option value="">All Queues</option>
-                {availableQueueIds.map((id) => (
-                  <option key={id} value={id}>
-                    {id}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={pageStyles.filterGroup}>
-              <label style={pageStyles.filterLabel}>Status:</label>
-              <select
-                value={selectedStatus}
-                onChange={(e) =>
-                  setSelectedStatus(e.target.value as QueueStatus | '')
-                }
-                style={pageStyles.filterSelect}
-              >
-                <option value="">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
-          </div>
-        )}
-      </div>
+      <ReviewFiltersBar
+        availableQueueIds={availableQueueIds}
+        selectedQueueId={selectedQueueId}
+        selectedStatus={selectedStatus}
+        onQueueIdChange={setSelectedQueueId}
+        onStatusChange={setSelectedStatus}
+        onClearFilters={handleClearFilters}
+      />
 
       {/* Review Items List */}
       <div style={pageStyles.listContainer}>
@@ -324,10 +276,10 @@ export function HumanReviewQueue() {
                       onClick={() => handleReviewClick(item)}
                       style={pageStyles.reviewButton}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#2563eb';
+                        e.currentTarget.style.backgroundColor = '#4338ca';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#3b82f6';
+                        e.currentTarget.style.backgroundColor = '#4f46e5';
                       }}
                     >
                       Review Now →
@@ -352,166 +304,116 @@ export function HumanReviewQueue() {
   );
 }
 
-// Import from lucide-react for stats icons
-import { ClipboardList } from 'lucide-react';
-
 // Styles
 const pageStyles = {
   container: {
-    minHeight: '100vh',
-    backgroundColor: '#f9fafb',
-    padding: '20px',
+    maxWidth: '1400px',
+    margin: '0 auto',
+    padding: '0 24px 40px',
   },
   loadingContainer: {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: '100vh',
-    fontSize: '18px',
+    padding: '48px',
     color: '#6b7280',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '24px',
-    padding: '20px',
-    backgroundColor: 'white',
-    borderRadius: '12px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-  },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-  },
-  logo: {
-    width: '40px',
-    height: '40px',
-  },
-  title: {
-    fontSize: '24px',
-    fontWeight: '600',
-    color: '#111827',
-    margin: 0,
+    fontSize: '14px',
   },
   backButton: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    padding: '10px 16px',
-    backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
+    padding: '8px 12px',
     fontSize: '14px',
-    color: '#374151',
+    fontWeight: 500,
+    color: '#6b7280',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderRadius: '6px',
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
+    marginBottom: '16px',
+    transition: 'background-color 0.15s',
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: '32px',
+  },
+  title: {
+    fontSize: '28px',
+    fontWeight: 600,
+    color: '#111827',
+    margin: '0 0 4px 0',
+  },
+  subtitle: {
+    fontSize: '14px',
+    color: '#6b7280',
+    margin: 0,
   },
   errorBanner: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    padding: '16px',
-    backgroundColor: '#fef2f2',
-    border: '1px solid #fecaca',
-    borderRadius: '8px',
+    padding: '12px 16px',
+    backgroundColor: '#fee2e2',
     color: '#991b1b',
-    marginBottom: '20px',
+    borderRadius: '8px',
+    marginBottom: '24px',
+    fontSize: '14px',
   },
   statsContainer: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '16px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gap: '12px',
     marginBottom: '24px',
   },
   statCard: {
     display: 'flex',
     alignItems: 'center',
-    gap: '16px',
-    padding: '20px',
-    backgroundColor: 'white',
-    borderRadius: '12px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    gap: '12px',
+    padding: '16px',
+    backgroundColor: '#fff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    transition: 'box-shadow 0.15s',
   },
   statIcon: {
-    width: '48px',
-    height: '48px',
-    borderRadius: '8px',
+    width: '40px',
+    height: '40px',
+    borderRadius: '6px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   statValue: {
-    fontSize: '28px',
-    fontWeight: '700',
+    fontSize: '24px',
+    fontWeight: '600',
     color: '#111827',
+    lineHeight: 1,
   },
   statLabel: {
-    fontSize: '14px',
+    fontSize: '13px',
     color: '#6b7280',
     marginTop: '4px',
   },
-  filtersSection: {
-    marginBottom: '20px',
-  },
-  filterToggle: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '10px 16px',
-    backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    fontSize: '14px',
-    color: '#374151',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-  },
-  filtersContainer: {
-    display: 'flex',
-    gap: '16px',
-    padding: '16px',
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    marginTop: '12px',
-    border: '1px solid #e5e7eb',
-  },
-  filterGroup: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '8px',
-  },
-  filterLabel: {
-    fontSize: '14px',
-    fontWeight: '500',
-    color: '#374151',
-  },
-  filterSelect: {
-    padding: '8px 12px',
-    border: '1px solid #d1d5db',
-    borderRadius: '6px',
-    fontSize: '14px',
-    color: '#374151',
-    backgroundColor: 'white',
-    cursor: 'pointer',
-  },
   listContainer: {
-    backgroundColor: 'white',
-    borderRadius: '12px',
-    padding: '24px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    marginTop: '24px',
   },
   emptyState: {
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '60px 20px',
+    padding: '64px 32px',
     textAlign: 'center' as const,
+    backgroundColor: '#f9fafb',
+    borderRadius: '12px',
+    border: '1px solid #e5e7eb',
   },
   emptyTitle: {
-    fontSize: '20px',
+    fontSize: '18px',
     fontWeight: '600',
     color: '#111827',
     margin: '0 0 8px 0',
@@ -524,14 +426,14 @@ const pageStyles = {
   itemsList: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '16px',
+    gap: '12px',
   },
   reviewItem: {
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     padding: '20px',
-    backgroundColor: '#fafafa',
-    transition: 'box-shadow 0.2s',
+    backgroundColor: '#fff',
+    transition: 'all 0.15s',
   },
   itemHeader: {
     display: 'flex',
@@ -651,13 +553,13 @@ const pageStyles = {
   },
   reviewButton: {
     padding: '10px 20px',
-    backgroundColor: '#3b82f6',
-    color: 'white',
+    backgroundColor: '#4f46e5',
+    color: '#fff',
     border: 'none',
     borderRadius: '8px',
     fontSize: '14px',
-    fontWeight: '500',
+    fontWeight: 500,
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
+    transition: 'background-color 0.15s',
   },
 } as const;
