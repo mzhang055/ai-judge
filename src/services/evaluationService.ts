@@ -450,7 +450,7 @@ export async function runEvaluations(
   // Run evaluations in parallel batches for efficiency
   let completed = 0;
   let failed = 0;
-  const BATCH_SIZE = 10; // Run 10 evaluations at a time
+  const BATCH_SIZE = 50; // Run 50 evaluations at a time
 
   for (let i = 0; i < evaluationPlan.length; i += BATCH_SIZE) {
     const batch = evaluationPlan.slice(i, i + BATCH_SIZE);

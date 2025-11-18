@@ -12,7 +12,7 @@
  */
 import { useState, useRef, useEffect } from 'react';
 import type { DragEvent, ChangeEvent } from 'react';
-import { Upload, Paperclip, X } from 'lucide-react';
+import { Upload, Paperclip, X, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   parseJSONFile,
@@ -309,9 +309,32 @@ export function FileUpload({
 
     // Add to attachment files array
     setAttachmentFiles((prev) => [...prev, ...files]);
-    toast.success(
-      `Added ${files.length} attachment${files.length !== 1 ? 's' : ''}`
-    );
+
+    // Warn if no JSON file has been uploaded yet
+    if (!validatedData && attachmentFiles.length === 0) {
+      toast.success(
+        `Added ${files.length} attachment${files.length !== 1 ? 's' : ''}`,
+        { duration: 3000 }
+      );
+      toast(
+        () => (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <AlertCircle
+              size={20}
+              style={{ color: '#f59e0b', flexShrink: 0 }}
+            />
+            <span>Don't forget to upload a JSON file (required)</span>
+          </div>
+        ),
+        {
+          duration: 4000,
+        }
+      );
+    } else {
+      toast.success(
+        `Added ${files.length} attachment${files.length !== 1 ? 's' : ''}`
+      );
+    }
   };
 
   const handleRemoveAttachment = (fileIndex: number) => {
@@ -353,9 +376,32 @@ export function FileUpload({
 
     if (validFiles.length > 0) {
       setAttachmentFiles((prev) => [...prev, ...validFiles]);
-      toast.success(
-        `Added ${validFiles.length} attachment${validFiles.length !== 1 ? 's' : ''}`
-      );
+
+      // Warn if no JSON file has been uploaded yet
+      if (!validatedData && attachmentFiles.length === 0) {
+        toast.success(
+          `Added ${validFiles.length} attachment${validFiles.length !== 1 ? 's' : ''}`,
+          { duration: 3000 }
+        );
+        toast(
+          () => (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertCircle
+                size={20}
+                style={{ color: '#f59e0b', flexShrink: 0 }}
+              />
+              <span>Don't forget to upload a JSON file (required)</span>
+            </div>
+          ),
+          {
+            duration: 4000,
+          }
+        );
+      } else {
+        toast.success(
+          `Added ${validFiles.length} attachment${validFiles.length !== 1 ? 's' : ''}`
+        );
+      }
     }
   };
 
@@ -452,7 +498,16 @@ export function FileUpload({
                   </div>
                   <div style={{ fontSize: '13px', color: '#666666' }}>
                     <strong style={{ color: '#000000' }}>Created At:</strong>{' '}
-                    {new Date(submission.createdAt).toLocaleString()}
+                    {new Date(submission.createdAt).toLocaleString('en-US', {
+                      timeZone:
+                        Intl.DateTimeFormat().resolvedOptions().timeZone,
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true,
+                    })}
                   </div>
                 </div>
 
@@ -742,7 +797,7 @@ export function FileUpload({
               justifyContent: 'center',
             }}
           >
-            {uploadStatus.status === 'idle' && (
+            {uploadStatus.status === 'idle' && !validatedData && (
               <>
                 <Upload
                   size={32}
@@ -762,6 +817,39 @@ export function FileUpload({
                 <p style={{ margin: 0, color: '#666666', fontSize: '14px' }}>
                   Drag and drop or click to browse
                 </p>
+              </>
+            )}
+
+            {uploadStatus.status === 'idle' && validatedData && (
+              <>
+                <Upload
+                  size={32}
+                  strokeWidth={1.5}
+                  style={{ margin: '0 auto 16px auto', color: '#666666' }}
+                />
+                <div
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    marginBottom: '8px',
+                    color: '#000000',
+                  }}
+                >
+                  Upload JSON File (Required)
+                </div>
+                <div
+                  style={{
+                    marginTop: '12px',
+                    padding: '8px 16px',
+                    background: '#f0f0f0',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    color: '#000000',
+                    display: 'inline-block',
+                  }}
+                >
+                  1 file selected
+                </div>
               </>
             )}
 

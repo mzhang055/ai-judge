@@ -38,14 +38,18 @@ export function QueuesPage() {
   };
 
   const formatDate = (isoString: string): string => {
-    const date = new Date(isoString);
-    return new Intl.DateTimeFormat('en-US', {
+    // Supabase returns timestamps without 'Z', so append it to treat as UTC
+    const utcString = isoString.endsWith('Z') ? isoString : `${isoString}Z`;
+    const date = new Date(utcString);
+
+    return date.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
-    }).format(date);
+      hour12: true,
+    });
   };
 
   if (loading) {
