@@ -4,8 +4,9 @@
 
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import type { Judge } from '../types';
+import type { Judge, PromptConfiguration } from '../types';
 import type { CreateJudgeInput } from '../services/judgeService';
+import { PromptConfigEditor } from './PromptConfigEditor';
 
 interface JudgeFormProps {
   judge?: Judge; // If provided, we're editing; otherwise creating
@@ -13,6 +14,17 @@ interface JudgeFormProps {
   onClose: () => void;
   onSubmit: (input: CreateJudgeInput) => Promise<void>;
 }
+
+// Default prompt configuration
+const DEFAULT_PROMPT_CONFIG: PromptConfiguration = {
+  include_question_text: true,
+  include_question_type: true,
+  include_answer: true,
+  include_submission_metadata: true,
+  include_queue_id: true,
+  include_labeling_task_id: true,
+  include_created_at: true,
+};
 
 export function JudgeForm({
   judge,
@@ -23,6 +35,9 @@ export function JudgeForm({
   const [name, setName] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [promptConfig, setPromptConfig] = useState<PromptConfiguration>(
+    DEFAULT_PROMPT_CONFIG
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,11 +47,13 @@ export function JudgeForm({
       setName(judge.name);
       setSystemPrompt(judge.system_prompt);
       setIsActive(judge.is_active);
+      setPromptConfig(judge.prompt_config || DEFAULT_PROMPT_CONFIG);
     } else {
       // Reset form for new judge
       setName('');
       setSystemPrompt('');
       setIsActive(true);
+      setPromptConfig(DEFAULT_PROMPT_CONFIG);
     }
     setError(null);
   }, [judge, isOpen]);
@@ -55,12 +72,22 @@ export function JudgeForm({
       return;
     }
 
+    // Validate that at least one field is selected
+    const hasAtLeastOneField = Object.values(promptConfig).some(
+      (v) => v === true
+    );
+    if (!hasAtLeastOneField) {
+      setError('At least one prompt field must be selected');
+      return;
+    }
+
     setLoading(true);
     try {
       await onSubmit({
         name: name.trim(),
         system_prompt: systemPrompt.trim(),
         is_active: isActive,
+        prompt_config: promptConfig,
       });
       onClose();
     } catch (err) {
@@ -147,6 +174,15 @@ export function JudgeForm({
               This prompt will be sent to the AI model along with the submission
               data.
             </p>
+          </div>
+
+          {/* Prompt Configuration */}
+          <div style={styles.field}>
+            <PromptConfigEditor
+              config={promptConfig}
+              onChange={setPromptConfig}
+              disabled={loading}
+            />
           </div>
 
           {/* Active toggle */}

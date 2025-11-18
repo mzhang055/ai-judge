@@ -61,6 +61,19 @@ export interface StoredSubmission extends Submission {
 }
 
 /**
+ * Configuration for which fields to include in the evaluation prompt
+ */
+export interface PromptConfiguration {
+  include_question_text: boolean;
+  include_question_type: boolean;
+  include_answer: boolean;
+  include_submission_metadata: boolean;
+  include_queue_id: boolean;
+  include_labeling_task_id: boolean;
+  include_created_at: boolean;
+}
+
+/**
  * AI Judge configuration
  * Note: Always uses GPT-5-mini model
  */
@@ -69,6 +82,7 @@ export interface Judge {
   name: string;
   system_prompt: string;
   is_active: boolean;
+  prompt_config?: PromptConfiguration; // Optional: defaults to all true if not provided
   created_at: string;
   updated_at: string;
 }
