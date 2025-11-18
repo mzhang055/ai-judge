@@ -291,20 +291,50 @@ npm test
 - Detailed reasoning for each evaluation
 - Historical data preservation
 
+## Bonus Features
+
+### ✅ File Attachments (Implemented!)
+
+**Feature**: Upload images and PDFs alongside submissions for multimodal AI evaluation.
+
+**How it works**:
+1. When uploading submissions JSON, you can attach files (images/PDFs) to each submission
+2. Files are stored in Supabase Storage
+3. When AI judges evaluate submissions, image attachments are sent to the LLM API
+4. The AI can visually verify human annotations (e.g., "Is the sky blue in this photo?")
+
+**Setup**:
+1. Run the SQL migration in `ATTACHMENT_MIGRATION.sql` via Supabase Dashboard
+2. Supported formats: PNG, JPG, GIF, WEBP, PDF (max 50MB each)
+3. During JSON upload preview, click "Add Files" for each submission
+
+**Use cases**:
+- UI/design review tasks (verify annotations on screenshots)
+- Image labeling QA (verify object counts/labels are accurate)
+- Document analysis (verify extracted information from PDFs)
+- OCR/transcription verification
+
+**Technical details**:
+- Files stored in Supabase Storage bucket: `submission-attachments`
+- Images sent as signed URLs to LLM API (GPT5-mini)
+- Attachment metadata stored in `submissions.attachments` JSONB column
+
+---
+
 ## Future Enhancements
 
-Potential improvements for production use:
+Additional potential improvements for production use:
 
-1. **File Attachments**: Forward screenshots/PDFs to LLM API for visual evaluation
-2. **Configurable Prompts**: Template fields for including/excluding specific data
-3. **Export Functionality**: CSV/JSON export for evaluation results
-4. **Advanced Analytics**: Charts and graphs for pass rates over time
-5. **User Authentication**: Role-based access control
-6. **Audit Logs**: Track all user actions for compliance
-7. **Bulk Operations**: Import/export judges, bulk edit assignments
-8. **API Endpoints**: REST API for programmatic access
-9. **Webhooks**: Notifications when evaluations complete
-10. **Multi-LLM Support**: Switch between OpenAI, Anthropic, Gemini per judge
+1. **Configurable Prompts**: Template fields for including/excluding specific data
+2. **Export Functionality**: CSV/JSON export for evaluation results
+3. **Advanced Analytics**: Charts and graphs for pass rates over time
+4. **User Authentication**: Role-based access control
+5. **Audit Logs**: Track all user actions for compliance
+6. **Bulk Operations**: Import/export judges, bulk edit assignments
+7. **API Endpoints**: REST API for programmatic access
+8. **Webhooks**: Notifications when evaluations complete
+9. **Multi-LLM Support**: Switch between OpenAI, Anthropic, Gemini per judge
+10. **Confidence Scores**: Track AI confidence in verdicts
 
 ## License
 

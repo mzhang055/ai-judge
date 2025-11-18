@@ -30,6 +30,17 @@ export interface Answer {
 }
 
 /**
+ * File attachment metadata
+ */
+export interface FileAttachment {
+  file_name: string;
+  file_path: string; // Path in Supabase Storage
+  mime_type: string;
+  size_bytes: number;
+  uploaded_at: string; // ISO timestamp
+}
+
+/**
  * Submission from the uploaded JSON file
  */
 export interface Submission {
@@ -39,6 +50,7 @@ export interface Submission {
   createdAt: number; // Unix timestamp in milliseconds
   questions: Question[];
   answers: Record<string, Answer>;
+  attachments?: FileAttachment[]; // Optional file attachments (images, PDFs)
 }
 
 /**

@@ -3,7 +3,14 @@
  */
 
 import { supabase } from '../lib/supabase';
-import { callLLM, LLMError, LLMErrorType } from '../lib/llm';
+import {
+  callLLM,
+  LLMError,
+  LLMErrorType,
+  buildMultimodalMessage,
+  isImageAttachment,
+  type LLMMessage,
+} from '../lib/llm';
 import { createError } from '../lib/errors';
 import type {
   Evaluation,
@@ -15,6 +22,7 @@ import type {
 import { getQueueSubmissions } from './queueService';
 import { listAssignmentsForQueue } from './judgeAssignmentService';
 import { listJudges } from './judgeService';
+import { getSignedFileUrl } from './fileStorageService';
 
 export interface EvaluationResult {
   verdict: 'pass' | 'fail' | 'inconclusive';
@@ -62,13 +70,14 @@ function parseEvaluationResponse(response: string): EvaluationResult {
 }
 
 /**
- * Create a prompt for the judge to evaluate a submission
+ * Create messages for the judge to evaluate a submission
+ * Returns system message and user message (potentially multimodal with images)
  */
-function createEvaluationPrompt(
+async function createEvaluationMessages(
   judge: Judge,
   submission: StoredSubmission,
   questionId: string
-): { system: string; user: string } {
+): Promise<{ systemMessage: LLMMessage; userMessage: LLMMessage }> {
   const question = submission.questions.find((q) => q.data.id === questionId);
   const answer = submission.answers[questionId];
 
@@ -78,9 +87,12 @@ function createEvaluationPrompt(
     );
   }
 
-  const system = judge.system_prompt;
+  const systemMessage: LLMMessage = {
+    role: 'system',
+    content: judge.system_prompt,
+  };
 
-  const user = `Please evaluate the following submission:
+  const userText = `Please evaluate the following submission:
 
 **Question ID:** ${questionId}
 **Question Type:** ${question.data.questionType}
@@ -99,7 +111,30 @@ Please provide your evaluation in the following format:
 Verdict: [pass/fail/inconclusive]
 Reasoning: [Your detailed reasoning here]`;
 
-  return { system, user };
+  // Check if submission has image attachments
+  const attachments = submission.attachments || [];
+  const imageAttachments = attachments.filter((att) =>
+    isImageAttachment(att.mime_type)
+  );
+
+  // If there are image attachments, create multimodal message
+  if (imageAttachments.length > 0) {
+    // Get signed URLs for all image attachments
+    const imageUrls = await Promise.all(
+      imageAttachments.map((att) => getSignedFileUrl(att.file_path))
+    );
+
+    const userMessage = buildMultimodalMessage(userText, imageUrls);
+    return { systemMessage, userMessage };
+  }
+
+  // Otherwise, simple text message
+  const userMessage: LLMMessage = {
+    role: 'user',
+    content: userText,
+  };
+
+  return { systemMessage, userMessage };
 }
 
 /**
@@ -144,8 +179,8 @@ async function evaluateSingle(
   runId: string
 ): Promise<Evaluation> {
   try {
-    // Create prompt
-    const { system, user } = createEvaluationPrompt(
+    // Create messages (potentially multimodal with images)
+    const { systemMessage, userMessage } = await createEvaluationMessages(
       judge,
       submission,
       questionId
@@ -153,10 +188,7 @@ async function evaluateSingle(
 
     // Call LLM with timeout and retries
     const response = await callLLM({
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
+      messages: [systemMessage, userMessage],
       temperature: 0.3, // Lower temperature for more consistent evaluations
       maxTokens: 2000,
       timeout: 60000, // 60s timeout per request
@@ -332,7 +364,7 @@ export async function runEvaluations(
       return {
         id: judge.id,
         name: judge.name,
-        model_name: 'gpt-4o-mini', // Default model
+        model_name: 'gpt-5-mini',
         question_ids: questionIds,
       };
     })
