@@ -15,7 +15,6 @@ import {
   Filter,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import logo from '../assets/besimple-logo.png';
 import { getErrorMessage } from '../lib/errors';
 import {
   getReviewQueue,
@@ -24,11 +23,7 @@ import {
   type ReviewQueueStats,
 } from '../services/humanReviewService';
 import { ReviewModal } from '../components/ReviewModal';
-import type {
-  HumanReviewQueueItemWithContext,
-  QueueStatus,
-  ReviewPriority,
-} from '../types';
+import type { HumanReviewQueueItemWithContext, QueueStatus } from '../types';
 
 export function HumanReviewQueue() {
   const navigate = useNavigate();
@@ -106,27 +101,6 @@ export function HumanReviewQueue() {
     setSelectedItem(null);
   };
 
-  const getPriorityBadge = (priority: ReviewPriority) => {
-    const styles = {
-      high: { bg: '#fee2e2', color: '#991b1b', icon: '🔴' },
-      medium: { bg: '#fef3c7', color: '#92400e', icon: '🟡' },
-      low: { bg: '#d1fae5', color: '#065f46', icon: '🟢' },
-    };
-
-    const style = styles[priority];
-    return (
-      <span
-        style={{
-          ...badgeStyles.base,
-          backgroundColor: style.bg,
-          color: style.color,
-        }}
-      >
-        {style.icon} {priority.toUpperCase()}
-      </span>
-    );
-  };
-
   const getVerdictIcon = (verdict: string) => {
     switch (verdict) {
       case 'pass':
@@ -150,26 +124,21 @@ export function HumanReviewQueue() {
 
   return (
     <div style={pageStyles.container}>
+      {/* Back button */}
+      <button style={pageStyles.backButton} onClick={() => navigate('/queues')}>
+        <ArrowLeft size={16} />
+        <span>Back to Queues</span>
+      </button>
+
       {/* Header */}
-      <header style={pageStyles.header}>
-        <div style={pageStyles.headerLeft}>
-          <img src={logo} alt="BeSimple" style={pageStyles.logo} />
+      <div style={pageStyles.header}>
+        <div>
           <h1 style={pageStyles.title}>Human Review Queue</h1>
+          <p style={pageStyles.subtitle}>
+            Review inconclusive AI verdicts and make final decisions
+          </p>
         </div>
-        <button
-          onClick={() => navigate('/')}
-          style={pageStyles.backButton}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#f3f4f6';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'white';
-          }}
-        >
-          <ArrowLeft size={20} />
-          <span>Back to Home</span>
-        </button>
-      </header>
+      </div>
 
       {/* Error display */}
       {error && (
@@ -209,14 +178,6 @@ export function HumanReviewQueue() {
             <div>
               <div style={pageStyles.statValue}>{stats.completed}</div>
               <div style={pageStyles.statLabel}>Completed</div>
-            </div>
-          </div>
-
-          <div style={pageStyles.statCardPriority}>
-            <div style={pageStyles.priorityStats}>
-              <div>🔴 High: {stats.highPriority}</div>
-              <div>🟡 Medium: {stats.mediumPriority}</div>
-              <div>🟢 Low: {stats.lowPriority}</div>
             </div>
           </div>
         </div>
@@ -304,7 +265,6 @@ export function HumanReviewQueue() {
                 <div key={item.id} style={pageStyles.reviewItem}>
                   <div style={pageStyles.itemHeader}>
                     <div style={pageStyles.itemHeaderLeft}>
-                      {getPriorityBadge(item.priority)}
                       <span style={pageStyles.queueBadge}>
                         Queue: {item.queue_id}
                       </span>
@@ -358,10 +318,10 @@ export function HumanReviewQueue() {
                       onClick={() => handleReviewClick(item)}
                       style={pageStyles.reviewButton}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#2563eb';
+                        e.currentTarget.style.backgroundColor = '#4338ca';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#3b82f6';
+                        e.currentTarget.style.backgroundColor = '#4f46e5';
                       }}
                     >
                       Review Now →
@@ -392,114 +352,96 @@ import { ClipboardList } from 'lucide-react';
 // Styles
 const pageStyles = {
   container: {
-    minHeight: '100vh',
-    backgroundColor: '#f9fafb',
-    padding: '20px',
+    maxWidth: '1400px',
+    margin: '0 auto',
+    padding: '0 24px 40px',
   },
   loadingContainer: {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: '100vh',
-    fontSize: '18px',
+    padding: '48px',
     color: '#6b7280',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '24px',
-    padding: '20px',
-    backgroundColor: 'white',
-    borderRadius: '12px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-  },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-  },
-  logo: {
-    width: '40px',
-    height: '40px',
-  },
-  title: {
-    fontSize: '24px',
-    fontWeight: '600',
-    color: '#111827',
-    margin: 0,
+    fontSize: '14px',
   },
   backButton: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    padding: '10px 16px',
-    backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
+    padding: '8px 12px',
     fontSize: '14px',
-    color: '#374151',
+    fontWeight: 500,
+    color: '#6b7280',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderRadius: '6px',
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
+    marginBottom: '16px',
+    transition: 'background-color 0.15s',
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: '32px',
+  },
+  title: {
+    fontSize: '28px',
+    fontWeight: 600,
+    color: '#111827',
+    margin: '0 0 4px 0',
+  },
+  subtitle: {
+    fontSize: '14px',
+    color: '#6b7280',
+    margin: 0,
   },
   errorBanner: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    padding: '16px',
-    backgroundColor: '#fef2f2',
-    border: '1px solid #fecaca',
-    borderRadius: '8px',
+    padding: '12px 16px',
+    backgroundColor: '#fee2e2',
     color: '#991b1b',
-    marginBottom: '20px',
+    borderRadius: '8px',
+    marginBottom: '24px',
+    fontSize: '14px',
   },
   statsContainer: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '16px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gap: '12px',
     marginBottom: '24px',
   },
   statCard: {
     display: 'flex',
     alignItems: 'center',
-    gap: '16px',
-    padding: '20px',
-    backgroundColor: 'white',
-    borderRadius: '12px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-  },
-  statCardPriority: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '20px',
-    backgroundColor: 'white',
-    borderRadius: '12px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    gap: '12px',
+    padding: '16px',
+    backgroundColor: '#fff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    transition: 'box-shadow 0.15s',
   },
   statIcon: {
-    width: '48px',
-    height: '48px',
-    borderRadius: '8px',
+    width: '40px',
+    height: '40px',
+    borderRadius: '6px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   statValue: {
-    fontSize: '28px',
-    fontWeight: '700',
+    fontSize: '24px',
+    fontWeight: '600',
     color: '#111827',
+    lineHeight: 1,
   },
   statLabel: {
-    fontSize: '14px',
+    fontSize: '13px',
     color: '#6b7280',
     marginTop: '4px',
-  },
-  priorityStats: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '8px',
-    fontSize: '14px',
-    color: '#374151',
   },
   filtersSection: {
     marginBottom: '20px',
@@ -546,21 +488,21 @@ const pageStyles = {
     cursor: 'pointer',
   },
   listContainer: {
-    backgroundColor: 'white',
-    borderRadius: '12px',
-    padding: '24px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    marginTop: '24px',
   },
   emptyState: {
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '60px 20px',
+    padding: '64px 32px',
     textAlign: 'center' as const,
+    backgroundColor: '#f9fafb',
+    borderRadius: '12px',
+    border: '1px solid #e5e7eb',
   },
   emptyTitle: {
-    fontSize: '20px',
+    fontSize: '18px',
     fontWeight: '600',
     color: '#111827',
     margin: '0 0 8px 0',
@@ -573,14 +515,14 @@ const pageStyles = {
   itemsList: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '16px',
+    gap: '12px',
   },
   reviewItem: {
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     padding: '20px',
-    backgroundColor: '#fafafa',
-    transition: 'box-shadow 0.2s',
+    backgroundColor: '#fff',
+    transition: 'all 0.15s',
   },
   itemHeader: {
     display: 'flex',
@@ -700,24 +642,13 @@ const pageStyles = {
   },
   reviewButton: {
     padding: '10px 20px',
-    backgroundColor: '#3b82f6',
-    color: 'white',
+    backgroundColor: '#4f46e5',
+    color: '#fff',
     border: 'none',
     borderRadius: '8px',
     fontSize: '14px',
-    fontWeight: '500',
+    fontWeight: 500,
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
-  },
-} as const;
-
-const badgeStyles = {
-  base: {
-    padding: '4px 12px',
-    borderRadius: '12px',
-    fontSize: '12px',
-    fontWeight: '600',
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.5px',
+    transition: 'background-color 0.15s',
   },
 } as const;

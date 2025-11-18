@@ -9,7 +9,6 @@ import type {
   HumanReviewQueueItemWithContext,
   HumanVerdict,
   QueueStatus,
-  ReviewPriority,
 } from '../types';
 
 /**
@@ -18,12 +17,10 @@ import type {
 export async function getReviewQueue(filters?: {
   queueId?: string;
   status?: QueueStatus;
-  priority?: ReviewPriority;
 }): Promise<HumanReviewQueueItemWithContext[]> {
   let query = supabase
     .from('human_review_queue_with_context')
     .select('*')
-    .order('priority', { ascending: true }) // high -> medium -> low
     .order('created_at', { ascending: true }); // oldest first
 
   if (filters?.queueId) {
@@ -32,10 +29,6 @@ export async function getReviewQueue(filters?: {
 
   if (filters?.status) {
     query = query.eq('status', filters.status);
-  }
-
-  if (filters?.priority) {
-    query = query.eq('priority', filters.priority);
   }
 
   const { data, error } = await query;
@@ -55,15 +48,12 @@ export interface ReviewQueueStats {
   in_progress: number;
   completed: number;
   total: number;
-  highPriority: number;
-  mediumPriority: number;
-  lowPriority: number;
 }
 
 export async function getReviewQueueStats(
   queueId?: string
 ): Promise<ReviewQueueStats> {
-  let query = supabase.from('human_review_queue').select('status, priority');
+  let query = supabase.from('human_review_queue').select('status');
 
   if (queueId) {
     query = query.eq('queue_id', queueId);
@@ -85,15 +75,6 @@ export async function getReviewQueueStats(
     in_progress: items.filter((i) => i.status === 'in_progress').length,
     completed: items.filter((i) => i.status === 'completed').length,
     total: items.length,
-    highPriority: items.filter(
-      (i) => i.priority === 'high' && i.status !== 'completed'
-    ).length,
-    mediumPriority: items.filter(
-      (i) => i.priority === 'medium' && i.status !== 'completed'
-    ).length,
-    lowPriority: items.filter(
-      (i) => i.priority === 'low' && i.status !== 'completed'
-    ).length,
   };
 }
 
@@ -160,7 +141,6 @@ export async function completeHumanReview(
  */
 export async function flagForHumanReview(
   evaluationId: string,
-  priority: ReviewPriority = 'medium',
   reason: string = 'manual_flag'
 ): Promise<void> {
   // First, update the evaluation to require human review
@@ -204,7 +184,6 @@ export async function flagForHumanReview(
       judge_name: evaluation.judge_name,
       ai_verdict: evaluation.verdict,
       ai_reasoning: evaluation.reasoning,
-      priority,
       flagged_reason: reason,
     });
 
