@@ -33,6 +33,8 @@ export interface FileUploadProps {
   onError?: ((error: string) => void) | (() => void);
   /** Optional CSS class name */
   className?: string;
+  /** Callback fired when user clicks Skip button */
+  onSkip?: () => void;
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -44,6 +46,7 @@ export function FileUpload({
   onUploadComplete,
   onError,
   className = '',
+  onSkip,
 }: FileUploadProps) {
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>({
     status: 'idle',
@@ -994,6 +997,30 @@ export function FileUpload({
             {attachmentFiles.length > 0 &&
               ` · ${attachmentFiles.length} attachment${attachmentFiles.length !== 1 ? 's' : ''}`}
           </div>
+        </div>
+      )}
+
+      {/* Skip Button */}
+      {onSkip && !validatedData && (
+        <div style={{ marginTop: '32px', textAlign: 'center' }}>
+          <button
+            onClick={onSkip}
+            disabled={isProcessing}
+            style={{
+              padding: '12px 32px',
+              background: 'transparent',
+              color: '#666666',
+              border: '1px solid #e5e5e5',
+              borderRadius: '8px',
+              cursor: isProcessing ? 'not-allowed' : 'pointer',
+              fontSize: '14px',
+              fontWeight: 500,
+              opacity: isProcessing ? 0.5 : 1,
+              transition: 'all 0.15s ease',
+            }}
+          >
+            Skip to Queue
+          </button>
         </div>
       )}
     </div>

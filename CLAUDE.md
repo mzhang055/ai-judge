@@ -48,47 +48,21 @@ Building an AI-powered evaluation system that automatically reviews human annota
 
 ## Database Schema (Supabase)
 
-```sql
-submissions (
-  id TEXT PRIMARY KEY,
-  queue_id TEXT,
-  labeling_task_id TEXT,
-  created_at BIGINT,
-  questions JSONB,
-  answers JSONB,
-  uploaded_at TIMESTAMP
-)
+**See `DATABASE_SETUP.md` for the complete SQL schema.**
 
-judges (
-  id UUID PRIMARY KEY,
-  name TEXT,
-  system_prompt TEXT,
-  model_name TEXT,
-  is_active BOOLEAN,
-  prompt_config JSONB,
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP
-)
+The database includes:
+- **submissions** - Uploaded JSON data with questions and answers
+- **judges** - AI judge configurations with system prompts and prompt_config
+- **judge_assignments** - Maps judges to specific questions within queues
+- **evaluation_runs** - Tracks each evaluation session with statistics
+- **evaluations** - Individual evaluation results with human review fields
+- **human_review_queue** - Auto-populated queue for inconclusive verdicts
 
-judge_assignments (
-  id UUID PRIMARY KEY,
-  queue_id TEXT,
-  question_id TEXT,
-  judge_id UUID → judges(id),
-  UNIQUE(queue_id, question_id, judge_id)
-)
-
-evaluations (
-  id UUID PRIMARY KEY,
-  submission_id TEXT → submissions(id),
-  question_id TEXT,
-  judge_id UUID → judges(id),
-  judge_name TEXT (denormalized for history),
-  verdict TEXT CHECK ('pass'/'fail'/'inconclusive'),
-  reasoning TEXT,
-  created_at TIMESTAMP
-)
-```
+Key features:
+- Auto-flagging triggers for inconclusive AI verdicts
+- Human review workflow with priority and status tracking
+- File attachment support via Supabase Storage
+- Full history tracking via evaluation runs
 
 ## Sample Input JSON Structure
 
@@ -149,8 +123,20 @@ evaluations (
 ## Bonus Features (Optional)
 - ✅ **File attachments** (screenshots, PDFs) forwarded to LLM API - IMPLEMENTED
 - ✅ **Configurable prompt fields** (include/exclude question text, answers, metadata) - IMPLEMENTED
+- ✅ **Human Review Queue (Phase 1)** - Auto-flag inconclusive verdicts for human review - IMPLEMENTED
 - Animated charts (pass-rate by judge)
 - Other relevant features
+
+### 3.6 Human Review Queue ✅ PHASE 1 COMPLETED
+- ✅ Auto-flag inconclusive AI verdicts for human review (database trigger)
+- ✅ Human review queue page with stats dashboard
+- ✅ Filters by queue ID and review status
+- ✅ Priority-based sorting (high/medium/low)
+- ✅ Review modal with full submission context
+- ✅ Human verdict options: pass, fail, bad_data, ambiguous_question, insufficient_context
+- ✅ Reviewer name and notes tracking
+- ✅ Atomic review completion with database function
+- See `HUMAN_REVIEW_SETUP.md` for setup instructions
 
 ## Deliverables
 - Vite project with React 18 + TypeScript

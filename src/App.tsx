@@ -15,6 +15,7 @@ import { JudgesPage } from './pages/JudgesPage';
 import { QueuesPage } from './pages/QueuesPage';
 import { QueuePage } from './pages/QueuePage';
 import { ResultsPage } from './pages/ResultsPage';
+import { HumanReviewQueue } from './pages/HumanReviewQueue';
 import logo from './assets/besimple-logo.png';
 import './App.css';
 
@@ -31,6 +32,11 @@ function AppContent() {
   const handleUploadError = useCallback(() => {
     // Error is already displayed in FileUpload component
   }, []);
+
+  const handleSkip = useCallback(() => {
+    // Navigate to queues page without uploading
+    navigate('/queues');
+  }, [navigate]);
 
   return (
     <div className="app">
@@ -62,6 +68,7 @@ function AppContent() {
                 <FileUpload
                   onUploadComplete={handleUploadComplete}
                   onError={handleUploadError}
+                  onSkip={handleSkip}
                 />
               }
             />
@@ -69,6 +76,7 @@ function AppContent() {
             <Route path="/queues/:queueId" element={<QueuePage />} />
             <Route path="/queues/:queueId/results" element={<ResultsPage />} />
             <Route path="/judges" element={<JudgesPage />} />
+            <Route path="/human-review" element={<HumanReviewQueue />} />
           </Routes>
         </main>
       </div>
