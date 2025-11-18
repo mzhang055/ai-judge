@@ -136,7 +136,7 @@ Key features:
 - ✅ Human verdict options: pass, fail, bad_data, ambiguous_question, insufficient_context
 - ✅ Reviewer name and notes tracking
 - ✅ Atomic review completion with database function
-- See `HUMAN_REVIEW_SETUP.md` for setup instructions
+- See `DATABASE_SETUP.md` for database schema and `README.md` for usage instructions
 
 ## Deliverables
 - Vite project with React 18 + TypeScript
@@ -175,6 +175,7 @@ Key features:
 - [x] Results view (3.5)
 - [x] **Bonus: File attachments**
 - [x] **Bonus: Configurable prompt fields**
+- [x] **Bonus: Human Review Queue (Phase 1)**
 
 ## Architectural Decisions (3.1)
 1. **Testing Strategy**: Vitest + React Testing Library for component tests
