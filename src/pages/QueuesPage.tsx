@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Settings,
   ArrowLeft,
+  ClipboardList,
 } from 'lucide-react';
 import { listQueues, type QueueSummary } from '../services/queueService';
 
@@ -71,10 +72,22 @@ export function QueuesPage() {
             View and manage submission queues for evaluation
           </p>
         </div>
-        <button style={styles.manageButton} onClick={() => navigate('/judges')}>
-          <Settings size={16} />
-          <span>Manage Judges</span>
-        </button>
+        <div style={styles.buttonGroup}>
+          <button
+            style={styles.reviewButton}
+            onClick={() => navigate('/human-review')}
+          >
+            <ClipboardList size={16} />
+            <span>Human Review Queue</span>
+          </button>
+          <button
+            style={styles.manageButton}
+            onClick={() => navigate('/judges')}
+          >
+            <Settings size={16} />
+            <span>Manage Judges</span>
+          </button>
+        </div>
       </div>
 
       {/* Error banner */}
@@ -166,6 +179,26 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     gap: '24px',
     marginBottom: '32px',
+  },
+  buttonGroup: {
+    display: 'flex',
+    gap: '12px',
+  },
+  reviewButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '10px 16px',
+    fontSize: '14px',
+    fontWeight: 500,
+    color: '#ea580c',
+    backgroundColor: '#fff',
+    border: '1px solid #fed7aa',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+    flexShrink: 0,
   },
   manageButton: {
     display: 'flex',

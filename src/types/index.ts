@@ -103,6 +103,21 @@ export interface JudgeAssignment {
 export type Verdict = 'pass' | 'fail' | 'inconclusive';
 
 /**
+ * Human verdict types (includes bad data classifications)
+ */
+export type HumanVerdict =
+  | 'pass'
+  | 'fail'
+  | 'bad_data'
+  | 'ambiguous_question'
+  | 'insufficient_context';
+
+/**
+ * Review status for evaluations requiring human review
+ */
+export type ReviewStatus = 'pending' | 'completed';
+
+/**
  * Result of an AI evaluation
  */
 export interface Evaluation {
@@ -115,6 +130,14 @@ export interface Evaluation {
   reasoning: string;
   created_at: string;
   run_id?: string; // Links to evaluation run session
+
+  // Human review fields
+  requires_human_review?: boolean;
+  human_verdict?: HumanVerdict;
+  human_reasoning?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  review_status?: ReviewStatus;
 }
 
 /**
@@ -140,6 +163,45 @@ export interface EvaluationRun {
   fail_count: number;
   inconclusive_count: number;
   pass_rate?: number; // Computed field
+}
+
+/**
+ * Priority levels for human review queue items
+ */
+export type ReviewPriority = 'low' | 'medium' | 'high';
+
+/**
+ * Status of a human review queue item
+ */
+export type QueueStatus = 'pending' | 'in_progress' | 'completed';
+
+/**
+ * Human review queue item
+ */
+export interface HumanReviewQueueItem {
+  id: string;
+  evaluation_id: string;
+  queue_id: string;
+  submission_id: string;
+  question_id: string;
+  judge_name: string;
+  ai_verdict: Verdict;
+  ai_reasoning?: string;
+  priority: ReviewPriority;
+  assigned_to?: string;
+  status: QueueStatus;
+  flagged_reason: string;
+  created_at: string;
+  completed_at?: string;
+}
+
+/**
+ * Human review queue item with full submission context
+ */
+export interface HumanReviewQueueItemWithContext extends HumanReviewQueueItem {
+  answers: Record<string, Answer>;
+  questions: Question[];
+  evaluation_created_at: string;
 }
 
 /**

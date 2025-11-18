@@ -122,10 +122,12 @@ export function QueuePage() {
 
       {/* Header */}
       <div style={styles.header}>
-        <button style={styles.backButton} onClick={() => navigate('/queues')}>
-          <ArrowLeft size={16} />
-          <span>Back to Queues</span>
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button style={styles.backButton} onClick={() => navigate('/queues')}>
+            <ArrowLeft size={16} />
+            <span>Back to Queues</span>
+          </button>
+        </div>
         <div style={styles.titleRow}>
           <div style={styles.titleSection}>
             <h1 style={styles.title}>Queue: {queueId}</h1>
