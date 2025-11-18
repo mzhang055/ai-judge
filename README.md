@@ -43,6 +43,14 @@ AI Judge is an internal annotation platform where AI judges automatically review
   - Sortable, filterable results table
   - Detailed reasoning for each evaluation
 
+- **Human Review Queue (3.6)** - Review inconclusive AI verdicts
+  - Auto-flagged inconclusive evaluations
+  - Priority-based review queue (high/medium/low)
+  - Full submission context in review modal
+  - Human verdict options: Pass, Fail, or categorized bad data
+  - Reviewer name and notes tracking
+  - Stats dashboard (pending/in-progress/completed)
+
 ## Tech Stack
 
 - **Frontend**: React 18, TypeScript, Vite
@@ -114,7 +122,8 @@ ai-judge/
 │   ├── components/          # React components
 │   │   ├── FileUpload.tsx
 │   │   ├── JudgeAssignment.tsx
-│   │   └── JudgeForm.tsx
+│   │   ├── JudgeForm.tsx
+│   │   └── ReviewModal.tsx
 │   ├── lib/                # Library initialization
 │   │   ├── supabase.ts
 │   │   ├── llm.ts
@@ -123,13 +132,15 @@ ai-judge/
 │   │   ├── QueuesPage.tsx
 │   │   ├── QueuePage.tsx
 │   │   ├── JudgesPage.tsx
-│   │   └── ResultsPage.tsx
+│   │   ├── ResultsPage.tsx
+│   │   └── HumanReviewQueue.tsx
 │   ├── services/           # Business logic services
 │   │   ├── submissionService.ts
 │   │   ├── judgeService.ts
 │   │   ├── judgeAssignmentService.ts
 │   │   ├── queueService.ts
-│   │   └── evaluationService.ts
+│   │   ├── evaluationService.ts
+│   │   └── humanReviewService.ts
 │   ├── test/               # Test setup
 │   │   └── setup.ts
 │   ├── types/              # TypeScript type definitions
@@ -192,6 +203,23 @@ ai-judge/
    - Verdict (pass/fail/inconclusive/all)
 4. Review detailed reasoning for each evaluation
 5. Export or analyze the data as needed
+
+#### 6. Human Review Queue (for inconclusive verdicts)
+1. When AI judges return "inconclusive" verdicts, they're automatically added to the review queue
+2. Click "Human Review Queue" from the Queues page
+3. View stats dashboard (pending/in-progress/completed counts)
+4. Filter by queue ID or status
+5. Click "Review Now" on any item to open the review modal
+6. Review the submission with full context:
+   - Question text and type
+   - Human's answer
+   - AI judge's verdict and reasoning
+7. Make your decision:
+   - **Pass** - Override AI to passing
+   - **Fail** - Override AI to failing
+   - **Mark as Bad Data** - Categorize the issue (ambiguous question, insufficient context, corrupted data, etc.)
+8. Enter your name and reasoning notes
+9. Submit - the item is marked complete and removed from pending queue
 
 ### Expected JSON Format
 
@@ -348,3 +376,37 @@ npm test
 - UI provides category toggles and individual field controls
 - Defaults to all fields enabled for backward compatibility
 - At least one field must be selected (enforced by validation)
+
+### Human Review Queue
+
+**Feature**: Automatically flag inconclusive AI verdicts for human review with full workflow support.
+
+**How it works**:
+1. When an AI judge returns verdict "inconclusive", a database trigger automatically:
+   - Sets `requires_human_review = true` on the evaluation
+   - Adds the item to the `human_review_queue` table
+2. Navigate to the Human Review Queue page to see all pending reviews
+3. Review each item with full context (question, answer, AI reasoning)
+4. Make a final decision and provide your reasoning
+5. The evaluation is updated with your human verdict and marked as completed
+
+**Human verdict options**:
+- **pass** - Override AI to mark as passing
+- **fail** - Override AI to mark as failing
+- **bad_data** - General data quality issue
+- **ambiguous_question** - Question is unclear/poorly written
+- **insufficient_context** - Answer lacks necessary information
+
+**Use cases**:
+- **Quality control**: Handle edge cases AI can't confidently judge
+- **Data quality**: Identify and categorize bad/ambiguous data
+- **Judge calibration**: Track which judges produce too many inconclusive verdicts
+- **Audit trail**: Full history of human decisions with reviewer names and timestamps
+
+**Technical details**:
+- Two-trigger system (BEFORE + AFTER) to avoid foreign key violations
+- `complete_human_review()` database function for atomic updates
+- `human_review_queue_with_context` view for efficient querying
+- Priority levels (high/medium/low) for review urgency
+- Status tracking (pending/in_progress/completed)
+- See `DATABASE_SETUP.md` for complete schema and setup instructions
