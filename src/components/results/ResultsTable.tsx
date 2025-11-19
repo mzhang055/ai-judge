@@ -133,40 +133,10 @@ export function ResultsTable({
         </thead>
         <tbody>
           {evaluations.map((evaluation) => {
-            const hasHumanReview =
-              evaluation.review_status === 'completed' &&
-              evaluation.human_verdict;
-            const rowStyle = hasHumanReview
-              ? { ...styles.tr, borderLeft: '4px solid #EDA436' }
-              : styles.tr;
-
             return (
-              <tr key={evaluation.id} style={rowStyle}>
+              <tr key={evaluation.id} style={styles.tr}>
                 <td style={styles.td}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    {hasHumanReview && (
-                      <div
-                        style={{
-                          backgroundColor: '#EDA436',
-                          color: '#fff',
-                          fontSize: '10px',
-                          fontWeight: 600,
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                        }}
-                        title="Human Reviewed"
-                      >
-                        HR
-                      </div>
-                    )}
-                    <code style={styles.code}>{evaluation.submission_id}</code>
-                  </div>
+                  <code style={styles.code}>{evaluation.submission_id}</code>
                 </td>
                 <td style={styles.td}>
                   <code style={styles.code}>{evaluation.question_id}</code>
@@ -215,7 +185,7 @@ export function ResultsTable({
 
 function VerdictCell({ evaluation }: { evaluation: Evaluation }) {
   const hasHumanReview =
-    evaluation.review_status === 'completed' && evaluation.human_verdict;
+    evaluation.review_status === 'completed' && !!evaluation.human_verdict;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -224,7 +194,10 @@ function VerdictCell({ evaluation }: { evaluation: Evaluation }) {
         <span style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>
           AI Judge:
         </span>
-        <VerdictBadge verdict={evaluation.verdict} />
+        <VerdictBadge
+          verdict={evaluation.verdict}
+          isGreyedOut={hasHumanReview}
+        />
       </div>
 
       {/* Human Review Verdict (if exists) */}
@@ -292,8 +265,30 @@ function ReasoningCell({ evaluation }: { evaluation: Evaluation }) {
   );
 }
 
-function VerdictBadge({ verdict }: { verdict: string }) {
+function VerdictBadge({
+  verdict,
+  isGreyedOut = false,
+}: {
+  verdict: string;
+  isGreyedOut?: boolean;
+}) {
   const getVerdictStyle = () => {
+    // If greyed out, use grey colors regardless of verdict
+    if (isGreyedOut) {
+      const iconMap = {
+        pass: <CheckCircle size={14} />,
+        fail: <XCircle size={14} />,
+        inconclusive: <HelpCircle size={14} />,
+      };
+      return {
+        color: '#9ca3af',
+        backgroundColor: '#f3f4f6',
+        icon: iconMap[verdict as keyof typeof iconMap] || (
+          <HelpCircle size={14} />
+        ),
+      };
+    }
+
     switch (verdict) {
       case 'pass':
         return {

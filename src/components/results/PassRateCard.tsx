@@ -9,8 +9,8 @@ interface PassRateCardProps {
   totalEvaluations: number;
   badDataCount?: number;
   humanReviewedCount?: number;
-  currentRun: EvaluationRun | null;
-  allRuns: EvaluationRun[];
+  currentRun?: EvaluationRun | null;
+  allRuns?: EvaluationRun[];
 }
 
 export function PassRateCard({
@@ -18,8 +18,6 @@ export function PassRateCard({
   totalEvaluations,
   badDataCount = 0,
   humanReviewedCount = 0,
-  currentRun,
-  allRuns,
 }: PassRateCardProps) {
   const validEvaluations = totalEvaluations - badDataCount;
 
@@ -42,20 +40,6 @@ export function PassRateCard({
               {badDataCount} bad data (excluded from rate)
             </span>
           )}
-        </div>
-      )}
-      {currentRun && (
-        <div style={styles.runInfo}>
-          <span style={{ fontWeight: 600, color: '#111827' }}>
-            {allRuns.findIndex((r) => r.id === currentRun.id) === 0
-              ? 'Latest Run'
-              : `Run #${allRuns.length - allRuns.findIndex((r) => r.id === currentRun.id)}`}
-          </span>
-          <span>•</span>
-          <span>
-            {new Date(currentRun.created_at).toLocaleDateString()}{' '}
-            {new Date(currentRun.created_at).toLocaleTimeString()}
-          </span>
         </div>
       )}
     </div>

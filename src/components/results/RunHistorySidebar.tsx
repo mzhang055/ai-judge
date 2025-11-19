@@ -71,6 +71,12 @@ interface RunItemProps {
 function RunItem({ run, isActive, passRate, label, onClick }: RunItemProps) {
   const [isHovered, setIsHovered] = useState(false);
 
+  // Supabase returns timestamps without 'Z', so append it to treat as UTC
+  const utcString = run.created_at.endsWith('Z')
+    ? run.created_at
+    : `${run.created_at}Z`;
+  const runDate = new Date(utcString);
+
   return (
     <div
       style={{
@@ -104,10 +110,10 @@ function RunItem({ run, isActive, passRate, label, onClick }: RunItemProps) {
         </div>
         {/* Date & time last */}
         <div style={styles.runItemDate}>
-          {new Date(run.created_at).toLocaleDateString()}
+          {runDate.toLocaleDateString()}
           <br />
           <span style={{ fontSize: '11px', opacity: 0.7 }}>
-            {new Date(run.created_at).toLocaleTimeString()}
+            {runDate.toLocaleTimeString()}
           </span>
         </div>
       </div>
@@ -119,12 +125,13 @@ const styles: Record<string, React.CSSProperties> = {
   sidebarContainer: {
     width: '240px',
     minWidth: '240px',
+    paddingRight: '16px',
   },
   sidebar: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: '12px',
-    padding: '16px',
-    border: '1px solid #eaeaea',
+    backgroundColor: 'transparent',
+    borderRadius: '0',
+    padding: '0',
+    border: 'none',
   },
   sidebarTitle: {
     fontSize: '18px',
@@ -144,16 +151,17 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#fff',
     cursor: 'pointer',
     transition: 'all 0.12s ease',
-    border: '1px solid transparent',
+    border: '1px solid #eaeaea',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
   },
   runItemActive: {
-    backgroundColor: '#f3f4ff',
-    borderColor: '#4f46e5',
-    boxShadow: '0 1px 2px rgba(79, 70, 229, 0.1)',
+    backgroundColor: '#fff7ed',
+    borderColor: '#EDA436',
+    boxShadow: '0 1px 2px rgba(237, 164, 54, 0.1)',
   },
   runItemHover: {
-    backgroundColor: '#faf5ff',
-    borderColor: '#e9d5ff',
+    backgroundColor: '#fffbf5',
+    borderColor: '#fed7aa',
   },
   runItemBadge: {
     display: 'inline-block',
@@ -201,9 +209,9 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '10px',
     fontWeight: 500,
     color: '#EDA436',
-    backgroundColor: '#eef2ff',
+    backgroundColor: '#fff7ed',
     padding: '2px 8px',
     borderRadius: '12px',
-    border: '1px solid #c7d2fe',
+    border: '1px solid #fed7aa',
   },
 };
