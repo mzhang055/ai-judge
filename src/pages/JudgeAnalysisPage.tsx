@@ -10,13 +10,21 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Lightbulb, Copy, X, Check, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Lightbulb, Copy, X, Check } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
+import { Card, CardContent } from '../components/ui/card';
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from '../components/ui/chart';
 import {
   getJudgePerformanceMetrics,
   getDisagreementExamples,
-  refreshJudgeMetrics,
   getJudgePassRateByDate,
   type DisagreementExample,
   type PassRateDataPoint,
@@ -119,12 +127,6 @@ export default function JudgeAnalysisPage() {
     }
   }
 
-  async function handleRefreshMetrics() {
-    if (!judgeId) return;
-    const fresh = await refreshJudgeMetrics(judgeId);
-    setMetrics(fresh);
-  }
-
   if (loading) {
     return (
       <div style={{ padding: '24px' }}>
@@ -188,52 +190,42 @@ export default function JudgeAnalysisPage() {
         >
           {judgeName} - Performance Analysis
         </h1>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <p style={{ color: '#666', fontSize: '14px' }}>
-            Detailed metrics and improvement suggestions
-          </p>
-          <button
-            onClick={handleRefreshMetrics}
-            style={{
-              padding: '6px 12px',
-              fontSize: '12px',
-              border: '1px solid #e5e7eb',
-              borderRadius: '6px',
-              background: '#fff',
-              cursor: 'pointer',
-              color: '#6366f1',
-            }}
-          >
-            Refresh Metrics
-          </button>
-        </div>
+        <p style={{ color: '#666', fontSize: '14px' }}>
+          Detailed metrics and improvement suggestions
+        </p>
       </div>
 
-      {/* Summary Stats */}
+      {/* Stats and Chart Row */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-          gap: '12px',
+          gridTemplateColumns: '200px 1fr',
+          gap: '24px',
           marginBottom: '24px',
         }}
       >
-        <StatBadge
-          label="Total Evaluations"
-          value={metrics.total_evaluations}
-        />
-        <StatBadge
-          label="Human Reviewed"
-          value={metrics.human_reviewed_count}
-        />
-        <StatBadge
-          label="Disagreements"
-          value={`${metrics.disagreement_count} (${disagreementPct}%)`}
-        />
-      </div>
+        {/* Summary Stats - Stacked Vertically */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+          }}
+        >
+          <StatBadge
+            label="AI Pass Rate"
+            value={`${(metrics.ai_pass_rate * 100).toFixed(1)}%`}
+          />
+          <StatBadge
+            label="Human Pass Rate"
+            value={`${(metrics.human_pass_rate * 100).toFixed(1)}%`}
+          />
+          <StatBadge label="Disagreement Rate" value={`${disagreementPct}%`} />
+        </div>
 
-      {/* Pass Rate Chart */}
-      <PassRateChart data={passRateData} metrics={metrics} />
+        {/* Pass Rate Chart */}
+        <PassRateChart data={passRateData} />
+      </div>
 
       {/* Auto-Generated Suggestions */}
       <div style={{ marginBottom: '32px' }}>
@@ -342,30 +334,46 @@ function StatBadge({
   return (
     <div
       style={{
-        padding: '12px 16px',
+        padding: '24px 20px',
         backgroundColor: '#f9fafb',
         border: '1px solid #e5e7eb',
-        borderRadius: '6px',
+        borderRadius: '8px',
         textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        minHeight: '100px',
       }}
     >
-      <p style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>
+      <p
+        style={{
+          fontSize: '12px',
+          color: '#666',
+          marginBottom: '8px',
+          fontWeight: '500',
+        }}
+      >
         {label}
       </p>
-      <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#111' }}>
+      <p style={{ fontSize: '28px', fontWeight: 'bold', color: '#111' }}>
         {value}
       </p>
     </div>
   );
 }
 
-function PassRateChart({
-  data,
-  metrics,
-}: {
-  data: PassRateDataPoint[];
-  metrics: JudgePerformanceMetrics;
-}) {
+const chartConfig = {
+  ai_pass_rate: {
+    label: 'AI Pass Rate',
+    color: 'hsl(220, 70%, 50%)',
+  },
+  human_pass_rate: {
+    label: 'Human Pass Rate',
+    color: 'hsl(160, 60%, 45%)',
+  },
+} satisfies ChartConfig;
+
+function PassRateChart({ data }: { data: PassRateDataPoint[] }) {
   if (data.length === 0) {
     return (
       <div
@@ -387,141 +395,76 @@ function PassRateChart({
 
   // Transform data for recharts (convert to percentage)
   const chartData = data.map((d) => ({
-    date: new Date(d.date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    }),
-    ai_pass_rate: Number((d.ai_pass_rate * 100).toFixed(1)),
-    human_pass_rate: Number((d.human_pass_rate * 100).toFixed(1)),
-    full_date: d.date,
+    date: d.date, // Formatted timestamp (e.g., "Jan 15, 3:30 PM")
+    queue_id: d.queue_id,
+    ai_pass_rate: Math.min(100, Number((d.ai_pass_rate * 100).toFixed(1))),
+    human_pass_rate: Math.min(
+      100,
+      Number((d.human_pass_rate * 100).toFixed(1))
+    ),
   }));
 
-  const aiPassPct = (metrics.ai_pass_rate * 100).toFixed(1);
-  const humanPassPct = (metrics.human_pass_rate * 100).toFixed(1);
-  const passRateGap = Math.abs(metrics.ai_pass_rate - metrics.human_pass_rate);
-  const isConverging = passRateGap < 0.1;
-
   return (
-    <div
-      style={{
-        backgroundColor: '#fff',
-        border: '1px solid #e5e7eb',
-        borderRadius: '8px',
-        padding: '24px',
-        marginBottom: '32px',
-      }}
-    >
-      {/* Header */}
-      <div style={{ marginBottom: '16px' }}>
-        <h3
-          style={{ fontSize: '18px', fontWeight: '600', marginBottom: '4px' }}
-        >
-          AI vs Human Pass Rate Over Time
-        </h3>
-        <p style={{ fontSize: '14px', color: '#666' }}>
-          Compare AI and human verdict pass rates to identify disagreement
-          patterns
-        </p>
-      </div>
-
-      {/* Chart */}
-      <div style={{ height: '300px', width: '100%', marginBottom: '16px' }}>
-        <AreaChart
-          data={chartData}
-          margin={{
-            left: 12,
-            right: 12,
-            top: 12,
-            bottom: 12,
-          }}
-          width={800}
-          height={300}
-        >
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis
-            dataKey="date"
-            tickLine={false}
-            axisLine={false}
-            tickMargin={8}
-            minTickGap={32}
-          />
-          <YAxis
-            tickLine={false}
-            axisLine={false}
-            tickMargin={8}
-            tickFormatter={(value) => `${value}%`}
-          />
-          <Area
-            dataKey="human_pass_rate"
-            type="natural"
-            fill="#10b981"
-            fillOpacity={0.3}
-            stroke="#10b981"
-            strokeWidth={2}
-            name="Human Pass Rate"
-          />
-          <Area
-            dataKey="ai_pass_rate"
-            type="natural"
-            fill="#6366f1"
-            fillOpacity={0.3}
-            stroke="#6366f1"
-            strokeWidth={2}
-            name="AI Pass Rate"
-          />
-        </AreaChart>
-      </div>
-
-      {/* Footer */}
-      <div
-        style={{
-          display: 'flex',
-          width: '100%',
-          alignItems: 'start',
-          gap: '8px',
-          fontSize: '14px',
-          paddingTop: '16px',
-          borderTop: '1px solid #e5e7eb',
-        }}
-      >
-        <div style={{ display: 'grid', gap: '8px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontWeight: '500',
+    <Card className="border-0 shadow-sm bg-white">
+      <CardContent className="px-6 pt-6">
+        <ChartContainer config={chartConfig} className="min-h-[280px] w-full">
+          <AreaChart
+            accessibilityLayer
+            data={chartData}
+            margin={{
+              left: 12,
+              right: 12,
+              top: 82,
+              bottom: 18,
             }}
           >
-            {isConverging ? (
-              <>
-                AI and human pass rates are aligned{' '}
-                <TrendingUp style={{ height: '16px', width: '16px' }} />
-              </>
-            ) : (
-              <>
-                {passRateGap > 0.2
-                  ? 'Significant'
-                  : passRateGap > 0.1
-                    ? 'Moderate'
-                    : 'Minor'}{' '}
-                disagreement: AI {aiPassPct}% vs Human {humanPassPct}%
-              </>
-            )}
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              color: '#666',
-            }}
-          >
-            {data.length} day{data.length !== 1 ? 's' : ''} of evaluation data
-          </div>
-        </div>
-      </div>
-    </div>
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="date"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              angle={-45}
+              textAnchor="end"
+              height={80}
+              tick={{ fontSize: 11 }}
+            />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickCount={5}
+              tickFormatter={(value) => `${value}%`}
+              domain={[0, 'dataMax']}
+              allowDataOverflow={false}
+            />
+            <ChartTooltip
+              cursor={false}
+              content={
+                <ChartTooltipContent className="bg-white border border-gray-200 shadow-lg" />
+              }
+            />
+            <ChartLegend content={<ChartLegendContent />} />
+            <Area
+              dataKey="ai_pass_rate"
+              type="monotone"
+              fill="var(--color-ai_pass_rate)"
+              fillOpacity={0.4}
+              stroke="var(--color-ai_pass_rate)"
+              strokeWidth={2}
+            />
+            <Area
+              dataKey="human_pass_rate"
+              type="monotone"
+              fill="var(--color-human_pass_rate)"
+              fillOpacity={0.4}
+              stroke="var(--color-human_pass_rate)"
+              strokeWidth={2}
+            />
+          </AreaChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
   );
 }
 

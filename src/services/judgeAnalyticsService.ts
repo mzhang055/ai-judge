@@ -112,10 +112,19 @@ export async function computeJudgeMetrics(
     const disagreements = evaluations.filter((e) => e.is_disagreement === true);
     const disagreementCount = disagreements.length;
 
+    // AI pass rate: exclude inconclusives from denominator
     const aiPasses = evaluations.filter((e) => e.verdict === 'pass').length;
+    const aiFails = evaluations.filter((e) => e.verdict === 'fail').length;
+    const aiDecisive = aiPasses + aiFails; // Only count decisive verdicts (pass/fail)
+
+    // Human pass rate: exclude inconclusives from denominator
     const humanPasses = evaluations.filter(
       (e) => e.human_verdict === 'pass'
     ).length;
+    const humanFails = evaluations.filter(
+      (e) => e.human_verdict === 'fail'
+    ).length;
+    const humanDecisive = humanPasses + humanFails;
 
     const metrics: JudgePerformanceMetrics = {
       id: crypto.randomUUID(),
@@ -127,8 +136,8 @@ export async function computeJudgeMetrics(
       disagreement_count: disagreementCount,
       disagreement_rate:
         humanReviewed > 0 ? disagreementCount / humanReviewed : 0,
-      ai_pass_rate: total > 0 ? aiPasses / total : 0,
-      human_pass_rate: humanReviewed > 0 ? humanPasses / humanReviewed : 0,
+      ai_pass_rate: aiDecisive > 0 ? aiPasses / aiDecisive : 0,
+      human_pass_rate: humanDecisive > 0 ? humanPasses / humanDecisive : 0,
       failure_patterns: await detectFailurePatterns(disagreements),
       computed_at: new Date().toISOString(),
     };
@@ -385,10 +394,20 @@ export async function getAllJudgesStats(): Promise<JudgeStats[]> {
       const disagreements = judgeEvals.filter(
         (e) => e.human_verdict && e.human_verdict !== e.verdict
       ).length;
+
+      // AI pass rate: exclude inconclusives from denominator
       const aiPasses = judgeEvals.filter((e) => e.verdict === 'pass').length;
+      const aiFails = judgeEvals.filter((e) => e.verdict === 'fail').length;
+      const aiDecisive = aiPasses + aiFails;
+
+      // Human pass rate: exclude inconclusives from denominator
       const humanPasses = judgeEvals.filter(
         (e) => e.human_verdict === 'pass'
       ).length;
+      const humanFails = judgeEvals.filter(
+        (e) => e.human_verdict === 'fail'
+      ).length;
+      const humanDecisive = humanPasses + humanFails;
 
       return {
         judge_id: judge.id,
@@ -398,8 +417,8 @@ export async function getAllJudgesStats(): Promise<JudgeStats[]> {
         disagreement_count: disagreements,
         disagreement_rate:
           humanReviewed > 0 ? disagreements / humanReviewed : 0,
-        ai_pass_rate: total > 0 ? aiPasses / total : 0,
-        human_pass_rate: humanReviewed > 0 ? humanPasses / humanReviewed : 0,
+        ai_pass_rate: aiDecisive > 0 ? aiPasses / aiDecisive : 0,
+        human_pass_rate: humanDecisive > 0 ? humanPasses / humanDecisive : 0,
         suggestion_count: suggestionCounts.get(judge.id) || 0,
       };
     });
@@ -425,7 +444,9 @@ export async function refreshJudgeMetrics(
  * Pass rate data point for charting
  */
 export interface PassRateDataPoint {
-  date: string; // ISO date string (YYYY-MM-DD)
+  date: string; // ISO date string (YYYY-MM-DD) or formatted timestamp
+  queue_id: string; // Queue identifier
+  timestamp: number; // Unix timestamp for sorting
   ai_pass_rate: number; // 0-1
   human_pass_rate: number; // 0-1
   total_evaluations: number;
@@ -433,54 +454,105 @@ export interface PassRateDataPoint {
 }
 
 /**
- * Get pass rate data grouped by date for a specific judge
+ * Get pass rate data grouped by evaluation run for a specific judge
+ * Each point represents a separate evaluation run, allowing tracking of changes over time
  */
 export async function getJudgePassRateByDate(
   judgeId: string
 ): Promise<PassRateDataPoint[]> {
   try {
-    // Fetch all evaluations for this judge
+    // Fetch all evaluations for this judge with submission data to get queue_id
     const { data: evaluations, error } = await supabase
       .from('evaluations')
-      .select('*')
+      .select(
+        `
+        *,
+        submissions!inner(queue_id)
+      `
+      )
       .eq('judge_id', judgeId)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
     if (!evaluations || evaluations.length === 0) return [];
 
-    // Group by date
-    const dateMap = new Map<string, Evaluation[]>();
+    // Group by run_id (or created_at if no run_id) to track each evaluation session
+    const runMap = new Map<
+      string,
+      { evals: any[]; timestamp: number; queueId: string }
+    >();
 
-    for (const evaluation of evaluations) {
-      const date = new Date(evaluation.created_at).toISOString().split('T')[0];
-      if (!dateMap.has(date)) {
-        dateMap.set(date, []);
+    for (const evaluation of evaluations as any[]) {
+      const queueId = evaluation.submissions?.queue_id;
+      const evalCreatedAt = evaluation.created_at;
+      const runId = evaluation.run_id || evalCreatedAt; // Fallback to created_at if no run_id
+
+      if (!runId) continue;
+
+      if (!runMap.has(runId)) {
+        // Append 'Z' to treat as UTC (Supabase doesn't include it)
+        const utcString = evalCreatedAt.endsWith('Z')
+          ? evalCreatedAt
+          : `${evalCreatedAt}Z`;
+        runMap.set(runId, {
+          evals: [],
+          timestamp: new Date(utcString).getTime(),
+          queueId: queueId || 'unknown',
+        });
       }
-      dateMap.get(date)!.push(evaluation);
+
+      const runData = runMap.get(runId)!;
+      runData.evals.push(evaluation);
+
+      // Track earliest timestamp for this run
+      const utcString = evalCreatedAt.endsWith('Z')
+        ? evalCreatedAt
+        : `${evalCreatedAt}Z`;
+      const timestamp = new Date(utcString).getTime();
+      runData.timestamp = Math.min(runData.timestamp, timestamp);
     }
 
-    // Calculate pass rates for each date
+    // Calculate pass rates for each evaluation run
     const dataPoints: PassRateDataPoint[] = [];
 
-    for (const [date, evals] of dateMap.entries()) {
+    for (const [, { evals, timestamp, queueId }] of runMap.entries()) {
       const total = evals.length;
+
+      // AI pass rate: exclude inconclusives from denominator
       const aiPasses = evals.filter((e) => e.verdict === 'pass').length;
+      const aiFails = evals.filter((e) => e.verdict === 'fail').length;
+      const aiDecisive = aiPasses + aiFails;
+
+      // Human pass rate: exclude inconclusives from denominator
       const humanReviewed = evals.filter((e) => e.human_verdict).length;
       const humanPasses = evals.filter(
         (e) => e.human_verdict === 'pass'
       ).length;
+      const humanFails = evals.filter((e) => e.human_verdict === 'fail').length;
+      const humanDecisive = humanPasses + humanFails;
+
+      // Format date as readable string (e.g., "Jan 15, 3:30 PM")
+      const dateObj = new Date(timestamp);
+      const formattedDate = dateObj.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
 
       dataPoints.push({
-        date,
-        ai_pass_rate: total > 0 ? aiPasses / total : 0,
-        human_pass_rate: humanReviewed > 0 ? humanPasses / humanReviewed : 0,
+        date: formattedDate,
+        queue_id: queueId, // Track which queue was evaluated
+        timestamp,
+        ai_pass_rate: aiDecisive > 0 ? aiPasses / aiDecisive : 0,
+        human_pass_rate: humanDecisive > 0 ? humanPasses / humanDecisive : 0,
         total_evaluations: total,
         human_reviewed_count: humanReviewed,
       });
     }
 
-    return dataPoints.sort((a, b) => a.date.localeCompare(b.date));
+    return dataPoints.sort((a, b) => a.timestamp - b.timestamp);
   } catch (error) {
     console.error('Error fetching pass rate by date:', error);
     return [];
