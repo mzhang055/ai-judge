@@ -129,7 +129,7 @@ export function PassRateChart({ evaluations, judges }: PassRateChartProps) {
                 padding: '8px',
               }}
             />
-            <Bar dataKey="passRate" fill="#6366f1" radius={[0, 5, 5, 0]} />
+            <Bar dataKey="passRate" fill="#EDA436" radius={[0, 5, 5, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

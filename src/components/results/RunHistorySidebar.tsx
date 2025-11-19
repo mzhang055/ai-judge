@@ -200,7 +200,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-block',
     fontSize: '10px',
     fontWeight: 500,
-    color: '#6366f1',
+    color: '#EDA436',
     backgroundColor: '#eef2ff',
     padding: '2px 8px',
     borderRadius: '12px',

@@ -18,6 +18,7 @@ import { ResultsPage } from './pages/ResultsPage';
 import JudgePerformanceDashboard from './pages/JudgePerformanceDashboard';
 import JudgeAnalysisPage from './pages/JudgeAnalysisPage';
 import logo from './assets/besimple-logo.png';
+import { TrendingUp, Settings } from 'lucide-react';
 import './App.css';
 
 function AppContent() {
@@ -59,6 +60,83 @@ function AppContent() {
             <img src={logo} alt="BeSimple Logo" className="logo" />
             <h1>AI Judge</h1>
           </div>
+          {!isDataIngestionPage && (
+            <div
+              style={{
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'center',
+              }}
+            >
+              <button
+                onClick={() => navigate('/judge-performance')}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  border: 'none',
+                  borderRadius: '8px',
+                  background: location.pathname.startsWith('/judge-performance')
+                    ? 'rgba(227, 158, 53, 0.1)'
+                    : 'transparent',
+                  color: '#E39E35',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!location.pathname.startsWith('/judge-performance')) {
+                    e.currentTarget.style.background =
+                      'rgba(227, 158, 53, 0.1)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!location.pathname.startsWith('/judge-performance')) {
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+              >
+                <TrendingUp size={16} strokeWidth={2.5} />
+                <span>Judge Performance</span>
+              </button>
+              <button
+                onClick={() => navigate('/judges')}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  border: 'none',
+                  borderRadius: '8px',
+                  background:
+                    location.pathname === '/judges'
+                      ? 'rgba(227, 158, 53, 0.1)'
+                      : 'transparent',
+                  color: '#E39E35',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (location.pathname !== '/judges') {
+                    e.currentTarget.style.background =
+                      'rgba(227, 158, 53, 0.1)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (location.pathname !== '/judges') {
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+              >
+                <Settings size={16} strokeWidth={2.5} />
+                <span>Manage Judges</span>
+              </button>
+            </div>
+          )}
         </header>
 
         <main className="main">

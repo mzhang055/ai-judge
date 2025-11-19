@@ -319,7 +319,22 @@ export async function generateSuggestions(
       return [];
     }
 
-    console.log('[generateSuggestions] Inserting into database...');
+    // Delete old pending suggestions for this judge before inserting new ones
+    console.log('[generateSuggestions] Deleting old pending suggestions...');
+    const { error: deleteError } = await supabase
+      .from('rubric_suggestions')
+      .delete()
+      .eq('judge_id', judgeId)
+      .eq('status', 'pending');
+
+    if (deleteError) {
+      console.error('[generateSuggestions] Delete error:', deleteError);
+      throw deleteError;
+    }
+
+    console.log(
+      '[generateSuggestions] Inserting new suggestions into database...'
+    );
     const { data: inserted, error: insertError } = await supabase
       .from('rubric_suggestions')
       .insert(suggestions)
@@ -521,9 +536,9 @@ async function analyzeDisagreementsWithLLM(
 
     const submissionMap = new Map(submissions.map((s) => [s.id, s]));
 
-    // Build disagreement examples for LLM
+    // Build disagreement examples for LLM (use 3 examples to save tokens)
     const disagreementExamples = evaluations
-      .slice(0, 5)
+      .slice(0, 3)
       .map((ev, index) => {
         const submission = submissionMap.get(ev.submission_id);
         const question = submission?.questions.find(
@@ -547,7 +562,7 @@ Human Reviewer Reasoning: ${ev.human_reasoning || 'N/A'}
 
     console.log(
       '[LLM] Calling LLM with',
-      evaluations.slice(0, 5).length,
+      evaluations.slice(0, 3).length,
       'examples'
     );
 
@@ -584,7 +599,7 @@ Only output valid JSON, nothing else.`,
         },
       ],
       temperature: 0.3,
-      maxTokens: 1000,
+      maxTokens: 2000,
     });
 
     console.log('[LLM] Raw response:', response.content);

@@ -6,13 +6,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import {
-  AlertCircle,
-  TrendingUp,
-  CheckCircle2,
-  Lightbulb,
-  ArrowLeft,
-} from 'lucide-react';
+import { AlertCircle, TrendingUp, CheckCircle2, ArrowLeft } from 'lucide-react';
 import {
   getAllJudgesStats,
   type JudgeStats,
@@ -58,34 +52,63 @@ export default function JudgePerformanceDashboard() {
       : 0;
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+    <div
+      style={{
+        padding: '40px 32px',
+        maxWidth: '1200px',
+        margin: '0 auto',
+        minHeight: '100vh',
+      }}
+    >
       {/* Back Button */}
       <button
         onClick={() => navigate('/queues')}
         style={{
-          display: 'flex',
+          display: 'inline-flex',
           alignItems: 'center',
           gap: '8px',
-          padding: '8px 16px',
-          marginBottom: '24px',
+          padding: '10px 16px',
+          marginBottom: '32px',
           border: 'none',
-          background: 'none',
+          background: 'transparent',
           cursor: 'pointer',
-          color: '#6366f1',
-          fontSize: '14px',
+          color: '#EDA436',
+          fontSize: '15px',
+          fontWeight: '500',
+          borderRadius: '12px',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateX(-2px)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateX(0)';
         }}
       >
-        <ArrowLeft size={16} /> Back to Queues
+        <ArrowLeft size={18} strokeWidth={2.5} /> Back to Queues
       </button>
 
       {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
+      <div style={{ marginBottom: '40px' }}>
         <h1
-          style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}
+          style={{
+            fontSize: '34px',
+            fontWeight: '700',
+            marginBottom: '8px',
+            color: '#1a1a1a',
+            letterSpacing: '-0.02em',
+          }}
         >
-          Judge Performance & Auto-Tuning
+          Judge Performance
         </h1>
-        <p style={{ color: '#666', fontSize: '14px' }}>
+        <p
+          style={{
+            color: '#6b7280',
+            fontSize: '16px',
+            fontWeight: '400',
+            lineHeight: '1.5',
+          }}
+        >
           Analyze judge performance and get AI-generated suggestions to improve
           rubrics
         </p>
@@ -95,27 +118,27 @@ export default function JudgePerformanceDashboard() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '16px',
-          marginBottom: '32px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '20px',
+          marginBottom: '40px',
         }}
       >
         <StatCard
           label="Total Evaluations"
           value={totalEvaluations}
-          icon={<TrendingUp size={20} />}
-          color="#6366f1"
+          icon={<TrendingUp size={22} strokeWidth={2.5} />}
+          color="#EDA436"
         />
         <StatCard
           label="Human Reviews"
           value={totalHumanReviews}
-          icon={<CheckCircle2 size={20} />}
+          icon={<CheckCircle2 size={22} strokeWidth={2.5} />}
           color="#10b981"
         />
         <StatCard
           label="Avg Disagreement"
           value={`${(avgDisagreementRate * 100).toFixed(1)}%`}
-          icon={<AlertCircle size={20} />}
+          icon={<AlertCircle size={22} strokeWidth={2.5} />}
           color="#f59e0b"
         />
       </div>
@@ -124,21 +147,48 @@ export default function JudgePerformanceDashboard() {
       {error && (
         <div
           style={{
-            padding: '16px',
-            backgroundColor: '#fee2e2',
+            padding: '20px 24px',
+            backgroundColor: '#fef2f2',
             border: '1px solid #fecaca',
-            borderRadius: '8px',
-            marginBottom: '16px',
+            borderRadius: '16px',
+            marginBottom: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
           }}
         >
-          <p style={{ color: '#991b1b' }}>{error}</p>
+          <AlertCircle size={20} color="#dc2626" />
+          <p style={{ color: '#991b1b', fontSize: '15px', fontWeight: '500' }}>
+            {error}
+          </p>
         </div>
       )}
 
       {/* Loading State */}
       {loading && (
-        <div style={{ textAlign: 'center', padding: '48px' }}>
-          <p style={{ color: '#666' }}>Loading judge statistics...</p>
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '80px 24px',
+            backgroundColor: 'rgba(249, 250, 251, 0.5)',
+            borderRadius: '20px',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              margin: '0 auto 16px',
+              border: '3px solid rgba(237, 164, 54, 0.2)',
+              borderTopColor: '#EDA436',
+              borderRadius: '50%',
+              animation: 'spin 0.8s linear infinite',
+            }}
+          />
+          <p style={{ color: '#6b7280', fontSize: '15px', fontWeight: '500' }}>
+            Loading judge statistics...
+          </p>
         </div>
       )}
 
@@ -147,16 +197,38 @@ export default function JudgePerformanceDashboard() {
         <div
           style={{
             textAlign: 'center',
-            padding: '48px',
-            backgroundColor: '#f9fafb',
-            borderRadius: '8px',
-            border: '1px solid #e5e7eb',
+            padding: '80px 24px',
+            backgroundColor: 'rgba(249, 250, 251, 0.5)',
+            borderRadius: '20px',
+            backdropFilter: 'blur(10px)',
           }}
         >
-          <p style={{ color: '#666', marginBottom: '8px' }}>
+          <div
+            style={{
+              width: '64px',
+              height: '64px',
+              margin: '0 auto 20px',
+              backgroundColor: 'rgba(237, 164, 54, 0.1)',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '28px',
+            }}
+          >
+            📊
+          </div>
+          <p
+            style={{
+              color: '#374151',
+              marginBottom: '8px',
+              fontSize: '17px',
+              fontWeight: '600',
+            }}
+          >
             No judge statistics available yet
           </p>
-          <p style={{ color: '#999', fontSize: '14px' }}>
+          <p style={{ color: '#9ca3af', fontSize: '15px' }}>
             Run some evaluations and human reviews to see analytics
           </p>
         </div>
@@ -166,24 +238,113 @@ export default function JudgePerformanceDashboard() {
         <div>
           <h2
             style={{
-              fontSize: '20px',
-              fontWeight: '600',
-              marginBottom: '16px',
+              fontSize: '22px',
+              fontWeight: '700',
+              marginBottom: '20px',
+              color: '#1a1a1a',
+              letterSpacing: '-0.01em',
             }}
           >
-            Judges (sorted by disagreement rate)
+            Judges
           </h2>
 
           <div
-            style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
+            style={{
+              backgroundColor: '#ffffff',
+              border: '1px solid rgba(0, 0, 0, 0.06)',
+              borderRadius: '16px',
+              overflow: 'hidden',
+              boxShadow:
+                '0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)',
+            }}
           >
-            {stats.map((judge) => (
-              <JudgeCard
-                key={judge.judge_id}
-                judge={judge}
-                onClick={() => navigate(`/judge-performance/${judge.judge_id}`)}
-              />
-            ))}
+            <table
+              style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+              }}
+            >
+              <thead>
+                <tr
+                  style={{
+                    backgroundColor: 'rgba(249, 250, 251, 0.8)',
+                    borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
+                  }}
+                >
+                  <th
+                    style={{
+                      padding: '16px 20px',
+                      textAlign: 'left',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#6b7280',
+                      width: '30%',
+                    }}
+                  >
+                    Judge Name
+                  </th>
+                  <th
+                    style={{
+                      padding: '16px 20px',
+                      textAlign: 'left',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#6b7280',
+                      width: '15%',
+                    }}
+                  >
+                    Disagreement Rate
+                  </th>
+                  <th
+                    style={{
+                      padding: '16px 20px',
+                      textAlign: 'left',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#6b7280',
+                      width: '35%',
+                    }}
+                  >
+                    Statistics
+                  </th>
+                  <th
+                    style={{
+                      padding: '16px 20px',
+                      textAlign: 'left',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#6b7280',
+                      width: '10%',
+                    }}
+                  >
+                    Status
+                  </th>
+                  <th
+                    style={{
+                      padding: '16px 20px',
+                      textAlign: 'center',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#6b7280',
+                      width: '10%',
+                    }}
+                  >
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.map((judge) => (
+                  <JudgeTableRow
+                    key={judge.judge_id}
+                    judge={judge}
+                    onNavigate={() =>
+                      navigate(`/judge-performance/${judge.judge_id}`)
+                    }
+                  />
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -208,33 +369,64 @@ function StatCard({
   return (
     <div
       style={{
-        padding: '20px',
-        backgroundColor: '#fff',
-        border: '1px solid #e5e7eb',
-        borderRadius: '8px',
-        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+        padding: '24px',
+        backgroundColor: '#ffffff',
+        border: '1px solid rgba(0, 0, 0, 0.06)',
+        borderRadius: '16px',
+        boxShadow:
+          '0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        cursor: 'default',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow =
+          '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04)';
+        e.currentTarget.style.transform = 'translateY(-2px)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow =
+          '0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)';
+        e.currentTarget.style.transform = 'translateY(0)';
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <div
           style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '8px',
+            width: '48px',
+            height: '48px',
+            borderRadius: '12px',
             backgroundColor: `${color}15`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color,
+            flexShrink: 0,
           }}
         >
           {icon}
         </div>
-        <div>
-          <p style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
+        <div style={{ flex: 1 }}>
+          <p
+            style={{
+              fontSize: '13px',
+              color: '#9ca3af',
+              marginBottom: '6px',
+              fontWeight: '500',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}
+          >
             {label}
           </p>
-          <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#111' }}>
+          <p
+            style={{
+              fontSize: '28px',
+              fontWeight: '700',
+              color: '#1a1a1a',
+              lineHeight: '1',
+              letterSpacing: '-0.02em',
+            }}
+          >
             {value}
           </p>
         </div>
@@ -244,177 +436,193 @@ function StatCard({
 }
 
 /**
- * Judge Card Component
+ * Judge Table Row Component
  */
-function JudgeCard({
+function JudgeTableRow({
   judge,
-  onClick,
+  onNavigate,
 }: {
   judge: JudgeStats;
-  onClick: () => void;
+  onNavigate: () => void;
 }) {
   const disagreementPct = (judge.disagreement_rate * 100).toFixed(1);
   const isHighDisagreement = judge.disagreement_rate > 0.25;
   const isLowDisagreement = judge.disagreement_rate < 0.1;
 
   return (
-    <div
+    <tr
       style={{
-        padding: '20px',
-        backgroundColor: '#fff',
-        border: '1px solid #e5e7eb',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        transition: 'all 0.2s',
-        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+        borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
+        transition: 'background-color 0.15s',
       }}
-      onClick={onClick}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = '#6366f1';
-        e.currentTarget.style.boxShadow = '0 4px 6px rgba(99,102,241,0.1)';
+        e.currentTarget.style.backgroundColor = 'rgba(249, 250, 251, 0.5)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = '#e5e7eb';
-        e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+        e.currentTarget.style.backgroundColor = 'transparent';
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-        {/* Status Icon */}
-        <div
-          style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '8px',
-            backgroundColor: isHighDisagreement
-              ? '#fef3c7'
-              : isLowDisagreement
-                ? '#d1fae5'
-                : '#e0e7ff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '24px',
-            flexShrink: 0,
-          }}
-        >
-          {isHighDisagreement ? '⚠️' : isLowDisagreement ? '✅' : '📊'}
-        </div>
-
-        {/* Content */}
-        <div style={{ flex: 1 }}>
+      {/* Judge Name with Avatar */}
+      <td style={{ padding: '18px 20px', verticalAlign: 'middle' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div
             style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: '#e0e7ff',
+              color: '#4f46e5',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '8px',
+              justifyContent: 'center',
+              fontSize: '16px',
+              fontWeight: '700',
+              flexShrink: 0,
             }}
           >
-            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111' }}>
-              {judge.judge_name}
-            </h3>
+            {judge.judge_name.charAt(0).toUpperCase()}
+          </div>
+          <span
+            style={{
+              fontSize: '15px',
+              fontWeight: '600',
+              color: '#1a1a1a',
+            }}
+          >
+            {judge.judge_name}
+          </span>
+        </div>
+      </td>
+
+      {/* Disagreement Rate */}
+      <td style={{ padding: '18px 20px', verticalAlign: 'middle' }}>
+        <div
+          style={{
+            fontSize: '20px',
+            fontWeight: '700',
+            color: isHighDisagreement
+              ? '#f59e0b'
+              : isLowDisagreement
+                ? '#10b981'
+                : '#EDA436',
+            letterSpacing: '-0.02em',
+          }}
+        >
+          {disagreementPct}%
+        </div>
+      </td>
+
+      {/* Statistics */}
+      <td style={{ padding: '18px 20px', verticalAlign: 'middle' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '16px',
+            fontSize: '13px',
+            color: '#6b7280',
+            fontWeight: '500',
+            flexWrap: 'wrap',
+          }}
+        >
+          <span>
+            <strong style={{ color: '#374151' }}>
+              {judge.total_evaluations}
+            </strong>{' '}
+            eval{judge.total_evaluations !== 1 ? 's' : ''}
+          </span>
+          <span style={{ color: '#d1d5db' }}>•</span>
+          <span>
+            <strong style={{ color: '#374151' }}>
+              {judge.human_reviewed_count}
+            </strong>{' '}
+            review{judge.human_reviewed_count !== 1 ? 's' : ''}
+          </span>
+          <span style={{ color: '#d1d5db' }}>•</span>
+          <span>
+            <strong style={{ color: '#374151' }}>
+              {judge.disagreement_count}
+            </strong>{' '}
+            disagree{judge.disagreement_count !== 1 ? 'd' : 's'}
+          </span>
+        </div>
+      </td>
+
+      {/* Status */}
+      <td style={{ padding: '18px 20px', verticalAlign: 'middle' }}>
+        <div style={{ fontSize: '13px', fontWeight: '500' }}>
+          {isHighDisagreement ? (
             <div
               style={{
-                fontSize: '24px',
-                fontWeight: 'bold',
-                color: isHighDisagreement
-                  ? '#f59e0b'
-                  : isLowDisagreement
-                    ? '#10b981'
-                    : '#6366f1',
+                color: '#f59e0b',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
               }}
             >
-              {disagreementPct}%
+              <AlertCircle size={16} strokeWidth={2.5} />
+              <span>High</span>
             </div>
-          </div>
-
-          {/* Stats Row */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '24px',
-              fontSize: '14px',
-              color: '#666',
-              marginBottom: '12px',
-            }}
-          >
-            <span>
-              {judge.total_evaluations} eval
-              {judge.total_evaluations !== 1 ? 's' : ''}
-            </span>
-            <span>|</span>
-            <span>
-              {judge.human_reviewed_count} human review
-              {judge.human_reviewed_count !== 1 ? 's' : ''}
-            </span>
-            <span>|</span>
-            <span>
-              {judge.disagreement_count} disagree
-              {judge.disagreement_count !== 1 ? 'd' : 's'}
-            </span>
-          </div>
-
-          {/* Status Message */}
-          <div style={{ fontSize: '14px' }}>
-            {isHighDisagreement ? (
-              <div
-                style={{
-                  color: '#f59e0b',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <AlertCircle size={16} />
-                <span>
-                  High disagreement rate - {judge.suggestion_count} improvement{' '}
-                  {judge.suggestion_count !== 1 ? 'suggestions' : 'suggestion'}{' '}
-                  available
-                </span>
-              </div>
-            ) : isLowDisagreement ? (
-              <div
-                style={{
-                  color: '#10b981',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <CheckCircle2 size={16} />
-                <span>Performing well</span>
-              </div>
-            ) : (
-              <div
-                style={{
-                  color: '#6366f1',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                {judge.suggestion_count > 0 && <Lightbulb size={16} />}
-                <span>
-                  {judge.suggestion_count > 0
-                    ? `${judge.suggestion_count} improvement ${
-                        judge.suggestion_count !== 1
-                          ? 'suggestions'
-                          : 'suggestion'
-                      } available`
-                    : 'Review performance details'}
-                </span>
-              </div>
-            )}
-          </div>
+          ) : isLowDisagreement ? (
+            <div
+              style={{
+                color: '#10b981',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <CheckCircle2 size={16} strokeWidth={2.5} />
+              <span>Good</span>
+            </div>
+          ) : (
+            <div
+              style={{
+                color: '#EDA436',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <TrendingUp size={16} strokeWidth={2.5} />
+              <span>Medium</span>
+            </div>
+          )}
         </div>
+      </td>
 
-        {/* Arrow */}
-        <div
-          style={{ color: '#9ca3af', fontSize: '20px', alignSelf: 'center' }}
+      {/* Actions */}
+      <td
+        style={{
+          padding: '18px 20px',
+          verticalAlign: 'middle',
+          textAlign: 'center',
+        }}
+      >
+        <button
+          onClick={onNavigate}
+          style={{
+            padding: '8px 16px',
+            fontSize: '13px',
+            fontWeight: '500',
+            border: '1px solid rgba(237, 164, 54, 0.3)',
+            borderRadius: '8px',
+            background: '#fff',
+            cursor: 'pointer',
+            color: '#EDA436',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(237, 164, 54, 0.5)';
+            e.currentTarget.style.background = 'rgba(237, 164, 54, 0.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(237, 164, 54, 0.3)';
+            e.currentTarget.style.background = '#fff';
+          }}
         >
-          →
-        </div>
-      </div>
-    </div>
+          View Details
+        </button>
+      </td>
+    </tr>
   );
 }

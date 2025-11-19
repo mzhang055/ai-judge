@@ -124,10 +124,11 @@ Key features:
 - ✅ **File attachments** (screenshots, PDFs) forwarded to LLM API - IMPLEMENTED
 - ✅ **Configurable prompt fields** (include/exclude question text, answers, metadata) - IMPLEMENTED
 - ✅ **Human Review Queue (Phase 1)** - Auto-flag inconclusive verdicts for human review - IMPLEMENTED
-- Animated charts (pass-rate by judge)
+- ✅ **Judge Performance & Auto-Tuning** - AI-powered rubric improvement suggestions - IMPLEMENTED
+- Animated charts (pass-rate by judge) - IMPLEMENTED (recharts area charts)
 - Other relevant features
 
-### 3.6 Human Review Queue ✅ PHASE 1 COMPLETED
+### 3.6 Human Review Queue ✅ COMPLETED
 - ✅ Auto-flag inconclusive AI verdicts for human review (database trigger)
 - ✅ Human review queue page with stats dashboard
 - ✅ Filters by queue ID and review status
@@ -137,6 +138,19 @@ Key features:
 - ✅ Reviewer name and notes tracking
 - ✅ Atomic review completion with database function
 - See `DATABASE_SETUP.md` for database schema and `README.md` for usage instructions
+
+### 3.7 Judge Performance & Auto-Tuning ✅ COMPLETED
+- ✅ Performance dashboard showing all judges with disagreement metrics
+- ✅ Individual judge analysis page with detailed metrics
+- ✅ AI vs Human pass rate comparison
+- ✅ Pass rate trend charts over time (using recharts)
+- ✅ Recent disagreement examples with side-by-side comparison
+- ✅ AI-powered suggestion generation analyzing human review patterns
+- ✅ One-click application of suggested rubric improvements
+- ✅ Copy suggestions to clipboard for manual editing
+- ✅ Dismiss irrelevant suggestions
+- ✅ Persistent header navigation to access from any page
+- See `judgeAnalyticsService.ts` and `rubricAnalysisService.ts` for implementation
 
 ## Deliverables
 - Vite project with React 18 + TypeScript
@@ -176,6 +190,9 @@ Key features:
 - [x] **Bonus: File attachments**
 - [x] **Bonus: Configurable prompt fields**
 - [x] **Bonus: Human Review Queue (Phase 1)**
+- [x] **Bonus: Judge Performance & Auto-Tuning**
+- [x] **Bonus: Animated pass rate charts**
+- [x] **Bonus: Persistent header navigation**
 
 ## Architectural Decisions (3.1)
 1. **Testing Strategy**: Vitest + React Testing Library for component tests

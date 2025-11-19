@@ -7,7 +7,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   AlertCircle,
-  Settings,
   Play,
   CheckCircle,
   XCircle,
@@ -144,13 +143,6 @@ export function QueuePage() {
             >
               <BarChart3 size={16} />
               <span>View Results</span>
-            </button>
-            <button
-              style={styles.manageButton}
-              onClick={() => navigate('/judges')}
-            >
-              <Settings size={16} />
-              <span>Manage Judges</span>
             </button>
           </div>
         </div>
@@ -336,9 +328,9 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '10px 16px',
     fontSize: '14px',
     fontWeight: 500,
-    color: '#10b981',
+    color: '#4f46e5',
     backgroundColor: '#fff',
-    border: '1px solid #d1fae5',
+    border: '1px solid #e0e7ff',
     borderRadius: '8px',
     cursor: 'pointer',
     transition: 'all 0.15s',
@@ -399,7 +391,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '14px',
     fontWeight: 500,
     color: '#fff',
-    backgroundColor: '#10b981',
+    backgroundColor: '#4f46e5',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',

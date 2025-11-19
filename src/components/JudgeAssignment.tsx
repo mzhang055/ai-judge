@@ -298,7 +298,7 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'transparent',
     border: 'none',
     cursor: 'pointer',
-    color: '#6366f1',
+    color: '#4f46e5',
     borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',

@@ -137,7 +137,7 @@ export function ResultsTable({
               evaluation.review_status === 'completed' &&
               evaluation.human_verdict;
             const rowStyle = hasHumanReview
-              ? { ...styles.tr, borderLeft: '4px solid #6366f1' }
+              ? { ...styles.tr, borderLeft: '4px solid #EDA436' }
               : styles.tr;
 
             return (
@@ -153,7 +153,7 @@ export function ResultsTable({
                     {hasHumanReview && (
                       <div
                         style={{
-                          backgroundColor: '#6366f1',
+                          backgroundColor: '#EDA436',
                           color: '#fff',
                           fontSize: '10px',
                           fontWeight: 600,

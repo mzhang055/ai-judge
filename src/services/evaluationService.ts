@@ -240,7 +240,7 @@ async function evaluateSingle(
     const response = await callLLM({
       messages: [systemMessage, userMessage],
       temperature: 0.3, // Lower temperature for more consistent evaluations
-      maxTokens: 2000,
+      maxTokens: 3000,
       timeout: 60000, // 60s timeout per request
       retries: 2, // Retry up to 2 times (3 total attempts)
       retryDelay: 1000, // Start with 1s delay

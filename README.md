@@ -51,6 +51,14 @@ AI Judge is an internal annotation platform where AI judges automatically review
   - Reviewer name and notes tracking
   - Stats dashboard (pending/in-progress/completed)
 
+- **Judge Performance & Auto-Tuning (3.7)** - Analyze and improve judge accuracy
+  - Performance dashboard with disagree ment metrics across all judges
+  - Individual judge analysis with pass rate trends over time
+  - Automated rubric improvement suggestions based on human review patterns
+  - AI-powered analysis of disagreements to identify judge weaknesses
+  - One-click application of suggested rubric improvements
+  - Historical tracking of judge performance and iterations
+
 ## Tech Stack
 
 - **Frontend**: React 18, TypeScript, Vite
@@ -220,6 +228,31 @@ ai-judge/
    - **Mark as Bad Data** - Categorize the issue (ambiguous question, insufficient context, corrupted data, etc.)
 8. Enter your name and reasoning notes
 9. Submit - the item is marked complete and removed from pending queue
+
+#### 7. Judge Performance & Auto-Tuning
+1. Click "Judge Performance" from the header navigation
+2. View the dashboard showing:
+   - Total evaluations across all judges
+   - Total human reviews completed
+   - Average disagreement rate
+   - List of all judges sorted by disagreement rate
+3. Click "View Details" on any judge to see individual analysis:
+   - AI vs Human pass rate comparison
+   - Pass rate trends over time (chart showing AI and human pass rates by evaluation run)
+   - Recent disagreement examples (side-by-side comparison of AI vs human verdicts)
+4. Generate improvement suggestions:
+   - Click "Generate New Suggestions" to analyze human review patterns
+   - AI analyzes disagreements to identify judge weaknesses
+   - Suggestions are automatically generated with supporting evidence
+5. Review and apply suggestions:
+   - Each suggestion shows the type of improvement and evidence count
+   - Copy suggestions to clipboard for manual editing
+   - Click "Apply Changes" to automatically append suggestions to the judge's system prompt
+   - Dismiss suggestions that aren't relevant
+6. Monitor improvements:
+   - Run new evaluations with updated judges
+   - Track whether disagreement rates decrease
+   - Iterate on rubrics based on continued feedback
 
 ### Expected JSON Format
 
@@ -410,3 +443,39 @@ npm test
 - Priority levels (high/medium/low) for review urgency
 - Status tracking (pending/in_progress/completed)
 - See `DATABASE_SETUP.md` for complete schema and setup instructions
+
+### Judge Performance & Auto-Tuning
+
+**Feature**: Automatically analyze judge performance and generate rubric improvement suggestions based on human review patterns.
+
+**How it works**:
+1. Navigate to "Judge Performance" from the header navigation (available on all pages)
+2. View aggregate metrics for all judges (disagreement rates, review counts)
+3. Click "View Details" on any judge to see:
+   - Pass rate comparisons (AI vs human decisions)
+   - Trend charts showing performance over time
+   - Recent disagreement examples with full context
+4. Click "Generate New Suggestions" to analyze patterns:
+   - AI analyzes all disagreements between AI and human verdicts
+   - Identifies common failure patterns and judge weaknesses
+   - Generates specific, actionable rubric improvements
+5. Review suggestions and apply changes:
+   - Each suggestion includes type (e.g., "specificity_improvement") and evidence count
+   - Copy to clipboard for manual editing
+   - Or click "Apply Changes" to automatically update the judge's system prompt
+   - Dismiss suggestions that aren't helpful
+
+**Use cases**:
+- **Iterative improvement**: Continuously refine judges based on human feedback
+- **Quality control**: Identify judges with high disagreement rates that need attention
+- **Performance monitoring**: Track whether rubric changes improve accuracy over time
+- **Systematic refinement**: Let AI identify patterns humans might miss
+
+**Technical details**:
+- Dashboard queries: `getAllJudgesStats()` aggregates metrics across judges
+- Individual analysis: `getJudgePerformanceMetrics()`, `getDisagreementExamples()`, `getJudgePassRateByDate()`
+- Suggestion generation: `generateSuggestions()` calls LLM API to analyze disagreement patterns
+- Database tables: `rubric_suggestions`, `rubric_suggestion_evidence`
+- Suggestions are versioned and tracked with timestamps
+- Applied suggestions update the judge's `system_prompt` and are marked as "applied" in database
+- See services: `judgeAnalyticsService.ts`, `rubricAnalysisService.ts`

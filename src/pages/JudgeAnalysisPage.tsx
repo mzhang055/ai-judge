@@ -10,7 +10,19 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Lightbulb, Copy, X, Check } from 'lucide-react';
+import {
+  ArrowLeft,
+  Lightbulb,
+  Copy,
+  X,
+  Check,
+  MessageSquare,
+  Bot,
+  User,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+} from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
 import { Card, CardContent } from '../components/ui/card';
@@ -129,34 +141,85 @@ export default function JudgeAnalysisPage() {
 
   if (loading) {
     return (
-      <div style={{ padding: '24px' }}>
-        <p style={{ color: '#666' }}>Loading judge analysis...</p>
+      <div
+        style={{
+          padding: '40px 32px',
+          maxWidth: '1200px',
+          margin: '0 auto',
+          minHeight: '100vh',
+        }}
+      >
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '80px 24px',
+            backgroundColor: 'rgba(249, 250, 251, 0.5)',
+            borderRadius: '20px',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              margin: '0 auto 16px',
+              border: '3px solid rgba(237, 164, 54, 0.2)',
+              borderTopColor: '#EDA436',
+              borderRadius: '50%',
+              animation: 'spin 0.8s linear infinite',
+            }}
+          />
+          <p style={{ color: '#6b7280', fontSize: '15px', fontWeight: '500' }}>
+            Loading judge analysis...
+          </p>
+        </div>
       </div>
     );
   }
 
   if (!metrics) {
     return (
-      <div style={{ padding: '24px' }}>
+      <div
+        style={{
+          padding: '40px 32px',
+          maxWidth: '1200px',
+          margin: '0 auto',
+          minHeight: '100vh',
+        }}
+      >
         <button
           onClick={() => navigate('/judge-performance')}
           style={{
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
-            padding: '8px 16px',
-            marginBottom: '16px',
+            padding: '10px 16px',
+            marginBottom: '32px',
             border: 'none',
-            background: 'none',
+            background: 'rgba(237, 164, 54, 0.1)',
             cursor: 'pointer',
-            color: '#6366f1',
+            color: '#EDA436',
+            fontSize: '15px',
+            fontWeight: '500',
+            borderRadius: '12px',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
-          <ArrowLeft size={16} /> Back to Dashboard
+          <ArrowLeft size={18} strokeWidth={2.5} /> Back to Dashboard
         </button>
-        <p style={{ color: '#666' }}>
-          No metrics available for this judge yet.
-        </p>
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '80px 24px',
+            backgroundColor: 'rgba(249, 250, 251, 0.5)',
+            borderRadius: '20px',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          <p style={{ color: '#6b7280', fontSize: '15px', fontWeight: '500' }}>
+            No metrics available for this judge yet.
+          </p>
+        </div>
       </div>
     );
   }
@@ -164,33 +227,62 @@ export default function JudgeAnalysisPage() {
   const disagreementPct = (metrics.disagreement_rate * 100).toFixed(1);
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+    <div
+      style={{
+        padding: '40px 32px',
+        maxWidth: '1200px',
+        margin: '0 auto',
+        minHeight: '100vh',
+      }}
+    >
       {/* Header */}
       <button
         onClick={() => navigate('/judge-performance')}
         style={{
-          display: 'flex',
+          display: 'inline-flex',
           alignItems: 'center',
           gap: '8px',
-          padding: '8px 16px',
-          marginBottom: '24px',
+          padding: '10px 16px',
+          marginBottom: '32px',
           border: 'none',
-          background: 'none',
+          background: 'transparent',
           cursor: 'pointer',
-          color: '#6366f1',
-          fontSize: '14px',
+          color: '#EDA436',
+          fontSize: '15px',
+          fontWeight: '500',
+          borderRadius: '12px',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateX(-2px)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateX(0)';
         }}
       >
-        <ArrowLeft size={16} /> Back to Dashboard
+        <ArrowLeft size={18} strokeWidth={2.5} /> Back to Dashboard
       </button>
 
-      <div style={{ marginBottom: '32px' }}>
+      <div style={{ marginBottom: '40px' }}>
         <h1
-          style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}
+          style={{
+            fontSize: '34px',
+            fontWeight: '700',
+            marginBottom: '8px',
+            color: '#1a1a1a',
+            letterSpacing: '-0.02em',
+          }}
         >
-          {judgeName} - Performance Analysis
+          {judgeName}
         </h1>
-        <p style={{ color: '#666', fontSize: '14px' }}>
+        <p
+          style={{
+            color: '#6b7280',
+            fontSize: '16px',
+            fontWeight: '400',
+            lineHeight: '1.5',
+          }}
+        >
           Detailed metrics and improvement suggestions
         </p>
       </div>
@@ -199,9 +291,9 @@ export default function JudgeAnalysisPage() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '200px 1fr',
-          gap: '24px',
-          marginBottom: '24px',
+          gridTemplateColumns: '220px 1fr',
+          gap: '20px',
+          marginBottom: '40px',
         }}
       >
         {/* Summary Stats - Stacked Vertically */}
@@ -209,7 +301,7 @@ export default function JudgeAnalysisPage() {
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '12px',
+            gap: '16px',
           }}
         >
           <StatBadge
@@ -228,35 +320,56 @@ export default function JudgeAnalysisPage() {
       </div>
 
       {/* Auto-Generated Suggestions */}
-      <div style={{ marginBottom: '32px' }}>
+      <div style={{ marginBottom: '40px' }}>
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '16px',
+            marginBottom: '20px',
           }}
         >
-          <h2 style={{ fontSize: '20px', fontWeight: '600' }}>
-            Auto-Generated Suggestions ({suggestions.length})
+          <h2
+            style={{
+              fontSize: '22px',
+              fontWeight: '700',
+              color: '#1a1a1a',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            System Prompt Suggestions
           </h2>
           <button
             onClick={handleGenerateSuggestions}
             disabled={generating}
             style={{
-              padding: '8px 16px',
-              fontSize: '14px',
+              padding: '10px 18px',
+              fontSize: '15px',
+              fontWeight: '500',
               border: 'none',
-              borderRadius: '6px',
-              background: generating ? '#e5e7eb' : '#6366f1',
-              color: '#fff',
+              borderRadius: '12px',
+              background: generating
+                ? 'rgba(209, 213, 219, 0.5)'
+                : 'rgba(237, 164, 54, 0.1)',
+              color: generating ? '#9ca3af' : '#EDA436',
               cursor: generating ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+            onMouseEnter={(e) => {
+              if (!generating) {
+                e.currentTarget.style.background = 'rgba(237, 164, 54, 0.15)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!generating) {
+                e.currentTarget.style.background = 'rgba(237, 164, 54, 0.1)';
+              }
             }}
           >
-            <Lightbulb size={16} />
+            <Lightbulb size={18} strokeWidth={2.5} />
             {generating ? 'Generating...' : 'Generate New Suggestions'}
           </button>
         </div>
@@ -264,14 +377,36 @@ export default function JudgeAnalysisPage() {
         {suggestions.length === 0 ? (
           <div
             style={{
-              padding: '32px',
-              backgroundColor: '#f9fafb',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
+              padding: '48px 32px',
+              backgroundColor: 'rgba(249, 250, 251, 0.5)',
+              border: '1px solid rgba(0, 0, 0, 0.06)',
+              borderRadius: '16px',
               textAlign: 'center',
+              backdropFilter: 'blur(10px)',
             }}
           >
-            <p style={{ color: '#666' }}>
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                margin: '0 auto 16px',
+                backgroundColor: 'rgba(237, 164, 54, 0.1)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '24px',
+              }}
+            >
+              💡
+            </div>
+            <p
+              style={{
+                color: '#6b7280',
+                fontSize: '15px',
+                fontWeight: '500',
+              }}
+            >
               No suggestions available. Click "Generate New Suggestions" to
               analyze human reviews.
             </p>
@@ -304,19 +439,112 @@ export default function JudgeAnalysisPage() {
         <div>
           <h2
             style={{
-              fontSize: '20px',
-              fontWeight: '600',
-              marginBottom: '16px',
+              fontSize: '22px',
+              fontWeight: '700',
+              color: '#1a1a1a',
+              letterSpacing: '-0.01em',
+              marginBottom: '20px',
             }}
           >
-            Recent Disagreements (AI vs Human)
+            Recent Disagreements
           </h2>
           <div
-            style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
+            style={{
+              backgroundColor: '#ffffff',
+              border: '1px solid rgba(0, 0, 0, 0.06)',
+              borderRadius: '16px',
+              overflow: 'hidden',
+              boxShadow:
+                '0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)',
+            }}
           >
-            {examples.map((example) => (
-              <DisagreementCard key={example.evaluation_id} example={example} />
-            ))}
+            <table
+              style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+              }}
+            >
+              <thead>
+                <tr
+                  style={{
+                    backgroundColor: 'rgba(249, 250, 251, 0.8)',
+                    borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
+                  }}
+                >
+                  <th
+                    style={{
+                      padding: '16px 20px',
+                      textAlign: 'left',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#6b7280',
+                      width: '30%',
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <MessageSquare size={14} />
+                      <span>Question & Answer</span>
+                    </span>
+                  </th>
+                  <th
+                    style={{
+                      padding: '16px 20px',
+                      textAlign: 'left',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#6b7280',
+                      width: '55%',
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <Bot size={14} />
+                      <span>AI Verdict</span>
+                    </span>
+                  </th>
+                  <th
+                    style={{
+                      padding: '16px 20px',
+                      textAlign: 'left',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#6b7280',
+                      width: '15%',
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <User size={14} />
+                      <span>Human Verdict</span>
+                    </span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {examples.map((example) => (
+                  <DisagreementRow
+                    key={example.evaluation_id}
+                    example={example}
+                  />
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -335,27 +563,50 @@ function StatBadge({
     <div
       style={{
         padding: '24px 20px',
-        backgroundColor: '#f9fafb',
-        border: '1px solid #e5e7eb',
-        borderRadius: '8px',
+        backgroundColor: '#ffffff',
+        border: '1px solid rgba(0, 0, 0, 0.06)',
+        borderRadius: '14px',
         textAlign: 'center',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        minHeight: '100px',
+        minHeight: '110px',
+        boxShadow:
+          '0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow =
+          '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04)';
+        e.currentTarget.style.transform = 'translateY(-2px)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow =
+          '0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)';
+        e.currentTarget.style.transform = 'translateY(0)';
       }}
     >
       <p
         style={{
           fontSize: '12px',
-          color: '#666',
-          marginBottom: '8px',
-          fontWeight: '500',
+          color: '#9ca3af',
+          marginBottom: '10px',
+          fontWeight: '600',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
         }}
       >
         {label}
       </p>
-      <p style={{ fontSize: '28px', fontWeight: 'bold', color: '#111' }}>
+      <p
+        style={{
+          fontSize: '32px',
+          fontWeight: '700',
+          color: '#1a1a1a',
+          lineHeight: '1',
+          letterSpacing: '-0.02em',
+        }}
+      >
         {value}
       </p>
     </div>
@@ -365,11 +616,11 @@ function StatBadge({
 const chartConfig = {
   ai_pass_rate: {
     label: 'AI Pass Rate',
-    color: 'hsl(220, 70%, 50%)',
+    color: '#FFCB7D',
   },
   human_pass_rate: {
     label: 'Human Pass Rate',
-    color: 'hsl(160, 60%, 45%)',
+    color: '#ED7036',
   },
 } satisfies ChartConfig;
 
@@ -378,15 +629,32 @@ function PassRateChart({ data }: { data: PassRateDataPoint[] }) {
     return (
       <div
         style={{
-          padding: '32px',
-          backgroundColor: '#f9fafb',
-          border: '1px solid #e5e7eb',
-          borderRadius: '8px',
+          padding: '48px 32px',
+          backgroundColor: 'rgba(249, 250, 251, 0.5)',
+          border: '1px solid rgba(0, 0, 0, 0.06)',
+          borderRadius: '16px',
           textAlign: 'center',
-          marginBottom: '32px',
+          backdropFilter: 'blur(10px)',
+          boxShadow:
+            '0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)',
         }}
       >
-        <p style={{ color: '#666' }}>
+        <div
+          style={{
+            width: '56px',
+            height: '56px',
+            margin: '0 auto 16px',
+            backgroundColor: 'rgba(237, 164, 54, 0.1)',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '24px',
+          }}
+        >
+          📈
+        </div>
+        <p style={{ color: '#6b7280', fontSize: '15px', fontWeight: '500' }}>
           No pass rate data available yet. Run some evaluations to see trends.
         </p>
       </div>
@@ -482,14 +750,6 @@ function SuggestionCard({
   const [copied, setCopied] = useState(false);
   const [applying, setApplying] = useState(false);
 
-  const confidencePct = (suggestion.confidence_score * 100).toFixed(0);
-  const confidenceLabel =
-    suggestion.confidence_score > 0.7
-      ? 'HIGH'
-      : suggestion.confidence_score > 0.4
-        ? 'MEDIUM'
-        : 'LOW';
-
   function copyToClipboard() {
     // Extract the suggested text from the suggestion
     const lines = suggestion.suggestion_text.split('\n');
@@ -548,211 +808,275 @@ function SuggestionCard({
   return (
     <div
       style={{
-        padding: '20px',
-        backgroundColor: '#fff',
-        border: `2px solid ${
-          suggestion.confidence_score > 0.7 ? '#f59e0b' : '#e5e7eb'
-        }`,
-        borderRadius: '8px',
+        padding: '24px',
+        backgroundColor: '#ffffff',
+        border: '1px solid rgba(0, 0, 0, 0.06)',
+        borderRadius: '16px',
+        boxShadow:
+          '0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
       {/* Header */}
       <div
         style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: '12px',
           marginBottom: '16px',
         }}
       >
-        <div
+        <h3
           style={{
-            padding: '8px 12px',
-            backgroundColor:
-              suggestion.confidence_score > 0.7 ? '#fef3c7' : '#e0e7ff',
-            borderRadius: '6px',
-            fontSize: '12px',
-            fontWeight: '600',
-            color: suggestion.confidence_score > 0.7 ? '#f59e0b' : '#6366f1',
+            fontSize: '17px',
+            fontWeight: '700',
+            marginBottom: '6px',
+            color: '#1a1a1a',
+            letterSpacing: '-0.01em',
           }}
         >
-          {confidenceLabel} CONFIDENCE ({confidencePct}%)
-        </div>
-        <div style={{ flex: 1 }}>
-          <h3
-            style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}
-          >
-            {suggestion.suggestion_type.replace(/_/g, ' ').toUpperCase()}
-          </h3>
-          <p style={{ fontSize: '12px', color: '#666' }}>
-            Based on {suggestion.evidence_count} supporting review
-            {suggestion.evidence_count !== 1 ? 's' : ''}
-          </p>
-        </div>
+          {suggestion.suggestion_type.replace(/_/g, ' ').toUpperCase()}
+        </h3>
+        <p style={{ fontSize: '13px', color: '#6b7280', fontWeight: '500' }}>
+          Based on {suggestion.evidence_count} supporting review
+          {suggestion.evidence_count !== 1 ? 's' : ''}
+        </p>
       </div>
 
       {/* Suggestion Text */}
       <div
         style={{
-          padding: '16px',
-          backgroundColor: '#f9fafb',
-          borderRadius: '6px',
-          marginBottom: '16px',
+          padding: '18px',
+          backgroundColor: 'rgba(249, 250, 251, 0.6)',
+          borderRadius: '12px',
+          marginBottom: '18px',
           whiteSpace: 'pre-wrap',
           fontSize: '14px',
           lineHeight: '1.6',
+          color: '#374151',
+          border: '1px solid rgba(0, 0, 0, 0.04)',
         }}
       >
         {suggestion.suggestion_text}
       </div>
 
       {/* Actions */}
-      <div style={{ display: 'flex', gap: '12px' }}>
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
         <button
           onClick={onDismiss}
           style={{
-            padding: '8px 16px',
+            padding: '10px 16px',
             fontSize: '14px',
-            border: '1px solid #e5e7eb',
-            borderRadius: '6px',
+            fontWeight: '500',
+            border: '1px solid rgba(0, 0, 0, 0.1)',
+            borderRadius: '10px',
             background: '#fff',
             cursor: 'pointer',
-            color: '#666',
+            color: '#6b7280',
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.2)';
+            e.currentTarget.style.background = '#f9fafb';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.1)';
+            e.currentTarget.style.background = '#fff';
           }}
         >
-          <X size={16} /> Dismiss
+          <X size={16} strokeWidth={2.5} /> Dismiss
         </button>
         <button
           onClick={copyToClipboard}
           style={{
-            padding: '8px 16px',
+            padding: '10px 16px',
             fontSize: '14px',
-            border: '1px solid #e5e7eb',
-            borderRadius: '6px',
+            fontWeight: '500',
+            border: '1px solid rgba(237, 164, 54, 0.3)',
+            borderRadius: '10px',
             background: '#fff',
             cursor: 'pointer',
-            color: '#6366f1',
+            color: '#EDA436',
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(237, 164, 54, 0.5)';
+            e.currentTarget.style.background = 'rgba(237, 164, 54, 0.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(237, 164, 54, 0.3)';
+            e.currentTarget.style.background = '#fff';
           }}
         >
-          {copied ? <Check size={16} /> : <Copy size={16} />}
-          {copied ? 'Copied!' : 'Copy Suggestion'}
+          {copied ? (
+            <Check size={16} strokeWidth={2.5} />
+          ) : (
+            <Copy size={16} strokeWidth={2.5} />
+          )}
+          {copied ? 'Copied!' : 'Copy'}
         </button>
         <button
           onClick={applyChanges}
           disabled={applying}
           style={{
-            padding: '8px 16px',
+            padding: '10px 16px',
             fontSize: '14px',
+            fontWeight: '500',
             border: 'none',
-            borderRadius: '6px',
-            background: applying ? '#9ca3af' : '#6366f1',
+            borderRadius: '10px',
+            background: applying ? '#d1d5db' : '#EDA436',
             cursor: applying ? 'not-allowed' : 'pointer',
             color: '#fff',
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: applying
+              ? 'none'
+              : '0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)',
+          }}
+          onMouseEnter={(e) => {
+            if (!applying) {
+              e.currentTarget.style.background = '#d89430';
+              e.currentTarget.style.boxShadow =
+                '0 4px 12px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!applying) {
+              e.currentTarget.style.background = '#EDA436';
+              e.currentTarget.style.boxShadow =
+                '0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)';
+            }
           }}
         >
-          <Check size={16} /> {applying ? 'Applying...' : 'Apply Changes'}
+          <Check size={16} strokeWidth={2.5} />{' '}
+          {applying ? 'Applying...' : 'Apply Changes'}
         </button>
       </div>
     </div>
   );
 }
 
-function DisagreementCard({ example }: { example: DisagreementExample }) {
+function DisagreementRow({ example }: { example: DisagreementExample }) {
+  const getVerdictBadge = (verdict: string, label: string) => {
+    const bgColor =
+      verdict === 'pass'
+        ? 'rgba(16, 185, 129, 0.12)'
+        : verdict === 'fail'
+          ? 'rgba(239, 68, 68, 0.12)'
+          : 'rgba(245, 158, 11, 0.12)';
+    const textColor =
+      verdict === 'pass'
+        ? '#059669'
+        : verdict === 'fail'
+          ? '#dc2626'
+          : '#d97706';
+
+    const Icon =
+      verdict === 'pass'
+        ? CheckCircle
+        : verdict === 'fail'
+          ? XCircle
+          : AlertTriangle;
+
+    return (
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '6px 12px',
+          borderRadius: '12px',
+          fontSize: '13px',
+          fontWeight: 600,
+          backgroundColor: bgColor,
+          color: textColor,
+          textTransform: 'capitalize',
+        }}
+      >
+        <Icon size={14} strokeWidth={2.5} />
+        {label}
+      </span>
+    );
+  };
+
   return (
-    <div
+    <tr
       style={{
-        padding: '16px',
-        backgroundColor: '#fff',
-        border: '1px solid #e5e7eb',
-        borderRadius: '8px',
+        borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
       }}
     >
-      <div style={{ marginBottom: '12px' }}>
-        <p style={{ fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
-          {example.question_text}
-        </p>
-        <p style={{ fontSize: '12px', color: '#666' }}>
-          Answer: {JSON.stringify(example.answer)}
-        </p>
-      </div>
-
-      <div
-        style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}
+      {/* Question & Answer */}
+      <td
+        style={{
+          padding: '18px 20px',
+          verticalAlign: 'top',
+        }}
       >
-        {/* AI Verdict */}
-        <div>
-          <div
+        <div style={{ marginBottom: '10px' }}>
+          <p
             style={{
-              display: 'inline-block',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              fontSize: '12px',
+              fontSize: '14px',
               fontWeight: '600',
+              color: '#1a1a1a',
               marginBottom: '8px',
-              backgroundColor:
-                example.ai_verdict === 'pass'
-                  ? '#d1fae5'
-                  : example.ai_verdict === 'fail'
-                    ? '#fee2e2'
-                    : '#fef3c7',
-              color:
-                example.ai_verdict === 'pass'
-                  ? '#065f46'
-                  : example.ai_verdict === 'fail'
-                    ? '#991b1b'
-                    : '#92400e',
+              lineHeight: '1.4',
             }}
           >
-            AI: {example.ai_verdict.toUpperCase()}
-          </div>
-          <p style={{ fontSize: '13px', color: '#666' }}>
-            {example.ai_reasoning}
+            {example.question_text}
+          </p>
+          <p style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.5' }}>
+            Answer:{' '}
+            {typeof example.answer === 'string'
+              ? example.answer
+              : JSON.stringify(example.answer)}
           </p>
         </div>
+      </td>
 
-        {/* Human Verdict */}
-        <div>
-          <div
-            style={{
-              display: 'inline-block',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              fontSize: '12px',
-              fontWeight: '600',
-              marginBottom: '8px',
-              backgroundColor:
-                example.human_verdict === 'pass'
-                  ? '#d1fae5'
-                  : example.human_verdict === 'fail'
-                    ? '#fee2e2'
-                    : '#fef3c7',
-              color:
-                example.human_verdict === 'pass'
-                  ? '#065f46'
-                  : example.human_verdict === 'fail'
-                    ? '#991b1b'
-                    : '#92400e',
-            }}
-          >
-            HUMAN: {example.human_verdict.toUpperCase()}
-          </div>
-          <p style={{ fontSize: '13px', color: '#666' }}>
-            {example.human_reasoning}
-          </p>
-          <p style={{ fontSize: '11px', color: '#999', marginTop: '8px' }}>
-            Reviewed by {example.reviewed_by}
-          </p>
+      {/* AI Verdict */}
+      <td
+        style={{
+          padding: '18px 20px',
+          verticalAlign: 'top',
+        }}
+      >
+        <div style={{ marginBottom: '10px' }}>
+          {getVerdictBadge(example.ai_verdict, example.ai_verdict)}
         </div>
-      </div>
-    </div>
+        <p style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.6' }}>
+          {example.ai_reasoning}
+        </p>
+      </td>
+
+      {/* Human Verdict */}
+      <td
+        style={{
+          padding: '18px 20px',
+          verticalAlign: 'top',
+        }}
+      >
+        <div style={{ marginBottom: '10px' }}>
+          {getVerdictBadge(example.human_verdict, example.human_verdict)}
+        </div>
+        <p
+          style={{
+            fontSize: '13px',
+            color: '#6b7280',
+            lineHeight: '1.6',
+            marginBottom: '8px',
+          }}
+        >
+          {example.human_reasoning}
+        </p>
+        <p style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>
+          Reviewed by {example.reviewed_by}
+        </p>
+      </td>
+    </tr>
   );
 }
