@@ -43,6 +43,17 @@ export function ResultsPage() {
   const [selectedVerdict, setSelectedVerdict] = useState<
     'all' | 'pass' | 'fail' | 'inconclusive'
   >('all');
+  const [selectedReviewStatus, setSelectedReviewStatus] = useState<
+    'all' | 'ai_only' | 'human_reviewed'
+  >('all');
+  const [selectedHumanVerdict, setSelectedHumanVerdict] = useState<
+    | 'all'
+    | 'pass'
+    | 'fail'
+    | 'bad_data'
+    | 'ambiguous_question'
+    | 'insufficient_context'
+  >('all');
 
   // Load data
   useEffect(() => {
@@ -126,22 +137,86 @@ export function ResultsPage() {
         return false;
       }
 
-      // Filter by verdict
+      // Filter by AI verdict
       if (selectedVerdict !== 'all' && evaluation.verdict !== selectedVerdict) {
         return false;
       }
 
+      // Filter by review status
+      const hasHumanReview =
+        evaluation.review_status === 'completed' && evaluation.human_verdict;
+      if (selectedReviewStatus === 'ai_only' && hasHumanReview) {
+        return false;
+      }
+      if (selectedReviewStatus === 'human_reviewed' && !hasHumanReview) {
+        return false;
+      }
+
+      // Filter by human verdict (only applies if human reviewed)
+      if (selectedHumanVerdict !== 'all' && hasHumanReview) {
+        if (evaluation.human_verdict !== selectedHumanVerdict) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [evaluations, selectedJudges, selectedQuestions, selectedVerdict]);
+  }, [
+    evaluations,
+    selectedJudges,
+    selectedQuestions,
+    selectedVerdict,
+    selectedReviewStatus,
+    selectedHumanVerdict,
+  ]);
 
-  // Calculate pass rate
-  const passRate = useMemo(() => {
-    if (filteredEvaluations.length === 0) return 0;
-    const passCount = filteredEvaluations.filter(
-      (e) => e.verdict === 'pass'
-    ).length;
-    return Math.round((passCount / filteredEvaluations.length) * 100);
+  // Calculate pass rate and stats
+  // Use human verdict when available, fall back to AI verdict
+  // Exclude bad_data from pass/fail calculations
+  const { passRate, badDataCount, humanReviewedCount } = useMemo(() => {
+    // Count bad data items
+    const badData = filteredEvaluations.filter((e) => {
+      const hasHumanReview = e.review_status === 'completed' && e.human_verdict;
+      return hasHumanReview && e.human_verdict === 'bad_data';
+    }).length;
+
+    // Count human reviewed items
+    const humanReviewed = filteredEvaluations.filter((e) => {
+      return e.review_status === 'completed' && e.human_verdict;
+    }).length;
+
+    // Filter out items marked as bad_data by human review
+    const validEvaluations = filteredEvaluations.filter((e) => {
+      const hasHumanReview = e.review_status === 'completed' && e.human_verdict;
+      if (hasHumanReview && e.human_verdict === 'bad_data') {
+        return false; // Exclude bad_data from stats
+      }
+      return true;
+    });
+
+    if (validEvaluations.length === 0) {
+      return {
+        passRate: 0,
+        badDataCount: badData,
+        humanReviewedCount: humanReviewed,
+      };
+    }
+
+    // Count passes - use human verdict if available, otherwise AI verdict
+    const passCount = validEvaluations.filter((e) => {
+      const hasHumanReview = e.review_status === 'completed' && e.human_verdict;
+      if (hasHumanReview) {
+        return e.human_verdict === 'pass';
+      }
+      return e.verdict === 'pass';
+    }).length;
+
+    const rate = Math.round((passCount / validEvaluations.length) * 100);
+    return {
+      passRate: rate,
+      badDataCount: badData,
+      humanReviewedCount: humanReviewed,
+    };
   }, [filteredEvaluations]);
 
   // Toggle filter selections
@@ -173,6 +248,8 @@ export function ResultsPage() {
     setSelectedJudges(new Set());
     setSelectedQuestions(new Set());
     setSelectedVerdict('all');
+    setSelectedReviewStatus('all');
+    setSelectedHumanVerdict('all');
   };
 
   if (loading) {
@@ -221,6 +298,8 @@ export function ResultsPage() {
           runs={allRuns}
           currentRunId={currentRun?.id || null}
           onRunSelect={switchToRun}
+          currentRunEvaluations={evaluations}
+          currentRunPassRate={passRate}
         />
 
         {/* Main Content */}
@@ -233,6 +312,8 @@ export function ResultsPage() {
             <PassRateCard
               passRate={passRate}
               totalEvaluations={filteredEvaluations.length}
+              badDataCount={badDataCount}
+              humanReviewedCount={humanReviewedCount}
               currentRun={currentRun}
               allRuns={allRuns}
             />
@@ -252,9 +333,13 @@ export function ResultsPage() {
               selectedJudges={selectedJudges}
               selectedQuestions={selectedQuestions}
               selectedVerdict={selectedVerdict}
+              selectedReviewStatus={selectedReviewStatus}
+              selectedHumanVerdict={selectedHumanVerdict}
               onToggleJudge={toggleJudgeFilter}
               onToggleQuestion={toggleQuestionFilter}
               onVerdictChange={setSelectedVerdict}
+              onReviewStatusChange={setSelectedReviewStatus}
+              onHumanVerdictChange={setSelectedHumanVerdict}
               onClearFilters={clearAllFilters}
             />
 
@@ -264,6 +349,12 @@ export function ResultsPage() {
               hasNoEvaluations={evaluations.length === 0}
               currentRun={currentRun}
               allRuns={allRuns}
+              onEvaluationUpdated={() => {
+                // Reload evaluations after update
+                if (currentRun) {
+                  getEvaluationsByRun(currentRun.id).then(setEvaluations);
+                }
+              }}
             />
           </div>
         </div>

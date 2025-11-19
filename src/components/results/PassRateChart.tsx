@@ -39,12 +39,27 @@ export function PassRateChart({ evaluations, judges }: PassRateChartProps) {
     });
 
     // Count evaluations by judge
+    // Use human verdict when available, exclude bad_data items
     evaluations.forEach((evaluation) => {
       const stats = statsMap.get(evaluation.judge_id);
       if (!stats) return;
 
+      const hasHumanReview =
+        evaluation.review_status === 'completed' && evaluation.human_verdict;
+
+      // Skip items marked as bad_data by human review
+      if (hasHumanReview && evaluation.human_verdict === 'bad_data') {
+        return;
+      }
+
       stats.total++;
-      if (evaluation.verdict === 'pass') stats.pass++;
+
+      // Use human verdict if available, otherwise AI verdict
+      if (hasHumanReview) {
+        if (evaluation.human_verdict === 'pass') stats.pass++;
+      } else {
+        if (evaluation.verdict === 'pass') stats.pass++;
+      }
     });
 
     // Calculate pass rates and build chart data
@@ -114,7 +129,7 @@ export function PassRateChart({ evaluations, judges }: PassRateChartProps) {
                 padding: '8px',
               }}
             />
-            <Bar dataKey="passRate" fill="#6366f1" radius={[0, 5, 5, 0]} />
+            <Bar dataKey="passRate" fill="#EDA436" radius={[0, 5, 5, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

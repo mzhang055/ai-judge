@@ -4,13 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Folder,
-  AlertCircle,
-  ChevronRight,
-  Settings,
-  ArrowLeft,
-} from 'lucide-react';
+import { Folder, AlertCircle, ChevronRight, ArrowLeft } from 'lucide-react';
 import { listQueues, type QueueSummary } from '../services/queueService';
 
 export function QueuesPage() {
@@ -37,14 +31,18 @@ export function QueuesPage() {
   };
 
   const formatDate = (isoString: string): string => {
-    const date = new Date(isoString);
-    return new Intl.DateTimeFormat('en-US', {
+    // Supabase returns timestamps without 'Z', so append it to treat as UTC
+    const utcString = isoString.endsWith('Z') ? isoString : `${isoString}Z`;
+    const date = new Date(utcString);
+
+    return date.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
-    }).format(date);
+      hour12: true,
+    });
   };
 
   if (loading) {
@@ -71,10 +69,6 @@ export function QueuesPage() {
             View and manage submission queues for evaluation
           </p>
         </div>
-        <button style={styles.manageButton} onClick={() => navigate('/judges')}>
-          <Settings size={16} />
-          <span>Manage Judges</span>
-        </button>
       </div>
 
       {/* Error banner */}
@@ -166,6 +160,42 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     gap: '24px',
     marginBottom: '32px',
+  },
+  buttonGroup: {
+    display: 'flex',
+    gap: '12px',
+  },
+  reviewButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '10px 16px',
+    fontSize: '14px',
+    fontWeight: 500,
+    color: '#ea580c',
+    backgroundColor: '#fff',
+    border: '1px solid #fed7aa',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+    flexShrink: 0,
+  },
+  performanceButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '10px 16px',
+    fontSize: '14px',
+    fontWeight: 500,
+    color: '#EDA436',
+    backgroundColor: '#fff',
+    border: '1px solid #e0e7ff',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+    flexShrink: 0,
   },
   manageButton: {
     display: 'flex',

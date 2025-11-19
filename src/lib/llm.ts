@@ -296,8 +296,14 @@ async function callOpenAI(options: LLMCallOptions): Promise<LLMResponse> {
         );
       }
 
+      // Handle null or undefined content
+      const content = choice.message.content || '';
+
+      console.log('[LLM] Response content length:', content.length);
+      console.log('[LLM] Full choice object:', JSON.stringify(choice, null, 2));
+
       return {
-        content: choice.message.content,
+        content,
         model: data.model,
         usage: {
           promptTokens: data.usage?.prompt_tokens || 0,

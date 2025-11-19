@@ -7,6 +7,8 @@ import type { EvaluationRun } from '../../types';
 interface PassRateCardProps {
   passRate: number;
   totalEvaluations: number;
+  badDataCount?: number;
+  humanReviewedCount?: number;
   currentRun: EvaluationRun | null;
   allRuns: EvaluationRun[];
 }
@@ -14,16 +16,34 @@ interface PassRateCardProps {
 export function PassRateCard({
   passRate,
   totalEvaluations,
+  badDataCount = 0,
+  humanReviewedCount = 0,
   currentRun,
   allRuns,
 }: PassRateCardProps) {
+  const validEvaluations = totalEvaluations - badDataCount;
+
   return (
     <div style={styles.passRateCard}>
       <div style={styles.passRateValue}>{passRate}%</div>
       <div style={styles.passRateLabel}>
-        Pass Rate ({totalEvaluations} evaluation
-        {totalEvaluations !== 1 ? 's' : ''})
+        Pass Rate ({validEvaluations} evaluation
+        {validEvaluations !== 1 ? 's' : ''})
       </div>
+      {(badDataCount > 0 || humanReviewedCount > 0) && (
+        <div style={styles.statsRow}>
+          {humanReviewedCount > 0 && (
+            <span style={styles.statItem}>
+              {humanReviewedCount} human reviewed
+            </span>
+          )}
+          {badDataCount > 0 && (
+            <span style={{ ...styles.statItem, color: '#7c3aed' }}>
+              {badDataCount} bad data (excluded from rate)
+            </span>
+          )}
+        </div>
+      )}
       {currentRun && (
         <div style={styles.runInfo}>
           <span style={{ fontWeight: 600, color: '#111827' }}>
@@ -73,5 +93,16 @@ const styles: Record<string, React.CSSProperties> = {
     borderTop: '1px solid #eaeaea',
     fontSize: '13px',
     color: '#666',
+  },
+  statsRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '12px',
+    marginTop: '8px',
+    fontSize: '13px',
+  },
+  statItem: {
+    color: '#6b7280',
   },
 };
