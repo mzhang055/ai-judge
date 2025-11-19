@@ -11,6 +11,7 @@ import {
   Settings,
   ArrowLeft,
   ClipboardList,
+  TrendingUp,
 } from 'lucide-react';
 import { listQueues, type QueueSummary } from '../services/queueService';
 
@@ -83,6 +84,13 @@ export function QueuesPage() {
           >
             <ClipboardList size={16} />
             <span>Human Review Queue</span>
+          </button>
+          <button
+            style={styles.performanceButton}
+            onClick={() => navigate('/judge-performance')}
+          >
+            <TrendingUp size={16} />
+            <span>Judge Performance</span>
           </button>
           <button
             style={styles.manageButton}
@@ -198,6 +206,22 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#ea580c',
     backgroundColor: '#fff',
     border: '1px solid #fed7aa',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+    flexShrink: 0,
+  },
+  performanceButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '10px 16px',
+    fontSize: '14px',
+    fontWeight: 500,
+    color: '#6366f1',
+    backgroundColor: '#fff',
+    border: '1px solid #e0e7ff',
     borderRadius: '8px',
     cursor: 'pointer',
     transition: 'all 0.15s',

@@ -103,14 +103,14 @@ export interface JudgeAssignment {
 export type Verdict = 'pass' | 'fail' | 'inconclusive';
 
 /**
- * Human verdict types (includes bad data classifications)
+ * Human verdict types
  */
 export type HumanVerdict =
   | 'pass'
   | 'fail'
-  | 'bad_data'
-  | 'ambiguous_question'
-  | 'insufficient_context';
+  | 'bad_data' // Data quality issue - not counted as disagreement
+  | 'ambiguous_question' // Question is unclear or poorly worded
+  | 'insufficient_context'; // Not enough context to make a judgment
 
 /**
  * Review status for evaluations requiring human review
@@ -138,6 +138,7 @@ export interface Evaluation {
   reviewed_by?: string;
   reviewed_at?: string;
   review_status?: ReviewStatus;
+  is_disagreement?: boolean; // True when human verdict differs from AI (for pass/fail)
 }
 
 /**
@@ -222,4 +223,56 @@ export interface UploadStatus {
   progress?: number;
   totalSubmissions?: number;
   uploadedSubmissions?: number;
+}
+
+/**
+ * Failure pattern detected in judge performance analysis
+ */
+export interface FailurePattern {
+  pattern_type: string; // e.g., 'short_answer', 'spelling_errors', 'incomplete_response'
+  description: string;
+  count: number;
+  examples: string[]; // Array of evaluation IDs
+  ai_pass_rate?: number;
+  human_pass_rate?: number;
+}
+
+/**
+ * Judge performance metrics (cached analytics)
+ */
+export interface JudgePerformanceMetrics {
+  id: string;
+  judge_id: string;
+  period_start: string;
+  period_end: string;
+  total_evaluations: number;
+  human_reviewed_count: number;
+  disagreement_count: number;
+  disagreement_rate: number;
+  ai_pass_rate: number;
+  human_pass_rate: number;
+  failure_patterns?: FailurePattern[];
+  computed_at: string;
+}
+
+/**
+ * Status of a rubric suggestion
+ */
+export type SuggestionStatus = 'pending' | 'applied' | 'dismissed';
+
+/**
+ * Auto-generated suggestion for improving judge rubric
+ */
+export interface RubricSuggestion {
+  id: string;
+  judge_id: string;
+  suggestion_type: string; // e.g., 'partial_credit', 'error_tolerance', 'answer_length'
+  suggestion_text: string;
+  evidence_examples?: string[]; // Array of evaluation IDs
+  evidence_count: number;
+  confidence_score: number; // 0-1
+  status: SuggestionStatus;
+  created_at: string;
+  applied_at?: string;
+  dismissed_at?: string;
 }

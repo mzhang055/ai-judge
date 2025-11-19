@@ -679,3 +679,61 @@ export async function getEvaluationsByRun(
 
   return data || [];
 }
+
+/**
+ * Override an AI evaluation verdict with a human decision
+ * Tracks disagreements for judge improvement
+ */
+export async function overrideEvaluation(
+  evaluationId: string,
+  humanVerdict:
+    | 'pass'
+    | 'fail'
+    | 'bad_data'
+    | 'ambiguous_question'
+    | 'insufficient_context',
+  humanReasoning: string,
+  reviewedBy: string
+): Promise<void> {
+  // First, get the evaluation to check for disagreement
+  const { data: evaluation, error: fetchError } = await supabase
+    .from('evaluations')
+    .select('verdict')
+    .eq('id', evaluationId)
+    .single();
+
+  if (fetchError || !evaluation) {
+    throw createError(
+      `Failed to fetch evaluation: ${fetchError?.message}`,
+      fetchError
+    );
+  }
+
+  // Determine if this is a disagreement
+  // Disagreement = human verdict differs from AI verdict AND is a pass/fail decision
+  // (not a data quality issue like bad_data, ambiguous_question, insufficient_context)
+  const isDisagreement =
+    humanVerdict !== evaluation.verdict &&
+    (humanVerdict === 'pass' || humanVerdict === 'fail');
+
+  // Update the evaluation with human override
+  const { error: updateError } = await supabase
+    .from('evaluations')
+    .update({
+      human_verdict: humanVerdict,
+      human_reasoning: humanReasoning,
+      reviewed_by: reviewedBy,
+      reviewed_at: new Date().toISOString(),
+      review_status: 'completed',
+      requires_human_review: false, // Clear the flag since it's now reviewed
+      is_disagreement: isDisagreement, // New field to track disagreements
+    })
+    .eq('id', evaluationId);
+
+  if (updateError) {
+    throw createError(
+      `Failed to override evaluation: ${updateError.message}`,
+      updateError
+    );
+  }
+}

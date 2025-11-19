@@ -2,6 +2,7 @@
  * ResultsTable - Displays evaluation results in a table
  */
 
+import { useState } from 'react';
 import {
   AlertCircle,
   CheckCircle,
@@ -12,7 +13,9 @@ import {
   User,
   Award,
   Calendar,
+  Edit3,
 } from 'lucide-react';
+import { EditVerdictModal } from './EditVerdictModal';
 import type { Evaluation, EvaluationRun } from '../../types';
 
 interface ResultsTableProps {
@@ -20,6 +23,7 @@ interface ResultsTableProps {
   hasNoEvaluations: boolean;
   currentRun: EvaluationRun | null;
   allRuns: EvaluationRun[];
+  onEvaluationUpdated?: () => void;
 }
 
 export function ResultsTable({
@@ -27,7 +31,25 @@ export function ResultsTable({
   hasNoEvaluations,
   currentRun,
   allRuns,
+  onEvaluationUpdated,
 }: ResultsTableProps) {
+  const [editingEvaluation, setEditingEvaluation] = useState<Evaluation | null>(
+    null
+  );
+
+  const handleEditClick = (evaluation: Evaluation) => {
+    setEditingEvaluation(evaluation);
+  };
+
+  const handleModalClose = () => {
+    setEditingEvaluation(null);
+  };
+
+  const handleModalComplete = () => {
+    setEditingEvaluation(null);
+    onEvaluationUpdated?.();
+  };
+
   if (evaluations.length === 0) {
     return (
       <div style={styles.emptyState}>
@@ -101,6 +123,12 @@ export function ResultsTable({
                 <span>Created</span>
               </div>
             </th>
+            <th style={styles.th}>
+              <div style={styles.thContent}>
+                <Edit3 size={14} />
+                <span>Actions</span>
+              </div>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -157,11 +185,30 @@ export function ResultsTable({
                     {new Date(evaluation.created_at).toLocaleTimeString()}
                   </div>
                 </td>
+                <td style={styles.td}>
+                  <button
+                    onClick={() => handleEditClick(evaluation)}
+                    style={styles.editButton}
+                    title="Edit verdict"
+                  >
+                    <Edit3 size={14} />
+                    <span>Edit</span>
+                  </button>
+                </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+
+      {/* Edit Verdict Modal */}
+      {editingEvaluation && (
+        <EditVerdictModal
+          evaluation={editingEvaluation}
+          onClose={handleModalClose}
+          onComplete={handleModalComplete}
+        />
+      )}
     </div>
   );
 }
@@ -315,20 +362,6 @@ function HumanVerdictBadge({ verdict }: { verdict: string }) {
           icon: <AlertCircle size={14} />,
           label: 'Bad Data',
         };
-      case 'ambiguous_question':
-        return {
-          color: '#ea580c',
-          backgroundColor: '#ffedd5',
-          icon: <HelpCircle size={14} />,
-          label: 'Ambiguous Question',
-        };
-      case 'insufficient_context':
-        return {
-          color: '#0284c7',
-          backgroundColor: '#e0f2fe',
-          icon: <AlertCircle size={14} />,
-          label: 'Insufficient Context',
-        };
       default:
         return {
           color: '#6b7280',
@@ -428,5 +461,19 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '13px',
     color: '#999',
     whiteSpace: 'nowrap',
+  },
+  editButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 12px',
+    fontSize: '13px',
+    fontWeight: 500,
+    color: '#4f46e5',
+    backgroundColor: '#eef2ff',
+    border: '1px solid #c7d2fe',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
   },
 };

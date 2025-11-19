@@ -349,6 +349,12 @@ export function ResultsPage() {
               hasNoEvaluations={evaluations.length === 0}
               currentRun={currentRun}
               allRuns={allRuns}
+              onEvaluationUpdated={() => {
+                // Reload evaluations after update
+                if (currentRun) {
+                  getEvaluationsByRun(currentRun.id).then(setEvaluations);
+                }
+              }}
             />
           </div>
         </div>

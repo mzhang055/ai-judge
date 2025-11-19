@@ -184,12 +184,6 @@ export function FiltersBar({
             <option value="pass">Human: Pass</option>
             <option value="fail">Human: Fail</option>
             <option value="bad_data">Human: Bad Data</option>
-            <option value="ambiguous_question">
-              Human: Ambiguous Question
-            </option>
-            <option value="insufficient_context">
-              Human: Insufficient Context
-            </option>
           </select>
         </div>
       )}

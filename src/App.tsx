@@ -15,7 +15,8 @@ import { JudgesPage } from './pages/JudgesPage';
 import { QueuesPage } from './pages/QueuesPage';
 import { QueuePage } from './pages/QueuePage';
 import { ResultsPage } from './pages/ResultsPage';
-import { HumanReviewQueue } from './pages/HumanReviewQueue';
+import JudgePerformanceDashboard from './pages/JudgePerformanceDashboard';
+import JudgeAnalysisPage from './pages/JudgeAnalysisPage';
 import logo from './assets/besimple-logo.png';
 import './App.css';
 
@@ -76,7 +77,14 @@ function AppContent() {
             <Route path="/queues/:queueId" element={<QueuePage />} />
             <Route path="/queues/:queueId/results" element={<ResultsPage />} />
             <Route path="/judges" element={<JudgesPage />} />
-            <Route path="/human-review" element={<HumanReviewQueue />} />
+            <Route
+              path="/judge-performance"
+              element={<JudgePerformanceDashboard />}
+            />
+            <Route
+              path="/judge-performance/:judgeId"
+              element={<JudgeAnalysisPage />}
+            />
           </Routes>
         </main>
       </div>
