@@ -3,7 +3,8 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { FileUpload } from './FileUpload';
+import { BrowserRouter } from 'react-router-dom';
+import { FileUpload } from './UploadPage';
 import * as submissionService from '../services/submissionService';
 
 // Mock the submission service
@@ -13,15 +14,35 @@ vi.mock('../services/submissionService', () => ({
   saveSubmissions: vi.fn(),
 }));
 
+// Mock the file storage service
+vi.mock('../services/fileStorageService', () => ({
+  uploadFiles: vi.fn(),
+  validateFile: vi.fn(),
+  SUPPORTED_EXTENSIONS: ['.png', '.jpg', '.jpeg', '.gif', '.pdf'],
+}));
+
+// Mock react-hot-toast
+vi.mock('react-hot-toast', () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+// Helper to render with router
+const renderWithRouter = (component: React.ReactElement) => {
+  return render(<BrowserRouter>{component}</BrowserRouter>);
+};
+
 describe('FileUpload', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('renders upload zone with initial state', () => {
-    render(<FileUpload />);
+    renderWithRouter(<FileUpload />);
 
-    expect(screen.getByText('Upload JSON File')).toBeInTheDocument();
+    expect(screen.getByText(/Upload JSON File/i)).toBeInTheDocument();
     expect(
       screen.getByText(/Drag and drop or click to browse/i)
     ).toBeInTheDocument();
@@ -29,7 +50,7 @@ describe('FileUpload', () => {
 
   it('shows error when non-JSON file is selected', async () => {
     const onError = vi.fn();
-    render(<FileUpload onError={onError} />);
+    renderWithRouter(<FileUpload onError={onError} />);
 
     const file = new File(['test'], 'test.txt', { type: 'text/plain' });
     const input = document.querySelector(
@@ -74,7 +95,7 @@ describe('FileUpload', () => {
     vi.mocked(submissionService.saveSubmissions).mockResolvedValue(['sub_1']);
 
     const onUploadComplete = vi.fn();
-    render(<FileUpload onUploadComplete={onUploadComplete} />);
+    renderWithRouter(<FileUpload onUploadComplete={onUploadComplete} />);
 
     const file = new File(
       [JSON.stringify(mockSubmissions)],
@@ -94,20 +115,38 @@ describe('FileUpload', () => {
     });
     fireEvent.change(input);
 
+    // Wait for validation success message
+    await waitFor(
+      () => {
+        expect(screen.getByText(/Continue to Preview/)).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    // Click continue to preview button
+    const continueButton = screen.getByText(/Continue to Preview/);
+    fireEvent.click(continueButton);
+
     // Wait for preview to show
-    await waitFor(() => {
-      expect(screen.getByText(/Preview:/)).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText(/Preview:/)).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
     // Click confirm button
     const confirmButton = screen.getByText('Confirm Upload');
     fireEvent.click(confirmButton);
 
     // Should eventually show success state
-    await waitFor(() => {
-      expect(screen.getByText('Upload Successful')).toBeInTheDocument();
-      expect(onUploadComplete).toHaveBeenCalledWith(1);
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Upload Successful')).toBeInTheDocument();
+        expect(onUploadComplete).toHaveBeenCalledWith(1);
+      },
+      { timeout: 3000 }
+    );
   });
 
   it('shows validation errors', async () => {
@@ -120,7 +159,7 @@ describe('FileUpload', () => {
     });
 
     const onError = vi.fn();
-    render(<FileUpload onError={onError} />);
+    renderWithRouter(<FileUpload onError={onError} />);
 
     const file = new File([JSON.stringify(mockData)], 'invalid.json', {
       type: 'application/json',
@@ -147,7 +186,7 @@ describe('FileUpload', () => {
     );
 
     const onError = vi.fn();
-    render(<FileUpload onError={onError} />);
+    renderWithRouter(<FileUpload onError={onError} />);
 
     const file = new File(['invalid json'], 'invalid.json', {
       type: 'application/json',
@@ -194,7 +233,7 @@ describe('FileUpload', () => {
     );
 
     const onError = vi.fn();
-    render(<FileUpload onError={onError} />);
+    renderWithRouter(<FileUpload onError={onError} />);
 
     const file = new File(
       [JSON.stringify(mockSubmissions)],
@@ -213,27 +252,44 @@ describe('FileUpload', () => {
     });
     fireEvent.change(input);
 
+    // Wait for validation and click continue
+    await waitFor(
+      () => {
+        expect(screen.getByText(/Continue to Preview/)).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    const continueButton = screen.getByText(/Continue to Preview/);
+    fireEvent.click(continueButton);
+
     // Wait for preview to show
-    await waitFor(() => {
-      expect(screen.getByText(/Preview:/)).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText(/Preview:/)).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
     // Click confirm button
     const confirmButton = screen.getByText('Confirm Upload');
     fireEvent.click(confirmButton);
 
     // Should show error
-    await waitFor(() => {
-      expect(screen.getByText('Upload Failed')).toBeInTheDocument();
-      expect(onError).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to save submissions')
-      );
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Upload Failed')).toBeInTheDocument();
+        expect(onError).toHaveBeenCalledWith(
+          expect.stringContaining('Failed to save submissions')
+        );
+      },
+      { timeout: 3000 }
+    );
   });
 
   it('allows retry after error', async () => {
     const onError = vi.fn();
-    render(<FileUpload onError={onError} />);
+    renderWithRouter(<FileUpload onError={onError} />);
 
     const file = new File(['test'], 'test.txt', { type: 'text/plain' });
     const input = document.querySelector(
@@ -254,7 +310,7 @@ describe('FileUpload', () => {
     const tryAgainButton = screen.getByText('Try Again');
     fireEvent.click(tryAgainButton);
 
-    expect(screen.getByText('Upload JSON File')).toBeInTheDocument();
+    expect(screen.getByText(/Upload JSON File/i)).toBeInTheDocument();
   });
 
   it('disables interaction during processing', async () => {
@@ -262,7 +318,7 @@ describe('FileUpload', () => {
       () => new Promise((resolve) => setTimeout(resolve, 1000))
     );
 
-    render(<FileUpload />);
+    renderWithRouter(<FileUpload />);
 
     const file = new File(['{}'], 'test.json', { type: 'application/json' });
     const input = document.querySelector(
@@ -286,7 +342,9 @@ describe('FileUpload', () => {
   });
 
   it('applies custom className', () => {
-    const { container } = render(<FileUpload className="custom-class" />);
+    const { container } = renderWithRouter(
+      <FileUpload className="custom-class" />
+    );
     expect(container.querySelector('.custom-class')).toBeInTheDocument();
   });
 });

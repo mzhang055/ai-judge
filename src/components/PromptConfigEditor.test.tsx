@@ -156,6 +156,7 @@ describe('PromptConfigEditor', () => {
 
     expect(onChange).toHaveBeenCalledWith({
       ...defaultConfig,
+      include_submission_metadata: false,
       include_queue_id: false,
       include_labeling_task_id: false,
       include_created_at: false,

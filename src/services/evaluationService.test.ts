@@ -10,21 +10,30 @@ import * as judgeService from './judgeService';
 import * as judgeAssignmentService from './judgeAssignmentService';
 import type { StoredSubmission, Judge, JudgeAssignment } from '../types';
 
-// Mock Supabase
-vi.mock('../lib/supabase', () => ({
-  supabase: {
-    from: vi.fn(() => ({
-      insert: vi.fn(() => ({
-        select: vi.fn(() => ({
-          single: vi.fn(() => ({
-            data: { id: 'eval-1', verdict: 'pass', reasoning: 'test' },
-            error: null,
-          })),
-        })),
+// Mock Supabase with chainable methods
+vi.mock('../lib/supabase', () => {
+  const createMockChain = () => {
+    const chain: any = {
+      from: vi.fn(() => chain),
+      insert: vi.fn(() => chain),
+      update: vi.fn(() => chain),
+      select: vi.fn(() => chain),
+      single: vi.fn(() => ({
+        data: { id: 'run-1', verdict: 'pass', reasoning: 'test' },
+        error: null,
       })),
-    })),
-  },
-}));
+      eq: vi.fn(() => chain),
+      in: vi.fn(() => chain),
+      order: vi.fn(() => chain),
+      limit: vi.fn(() => chain),
+    };
+    return chain;
+  };
+
+  return {
+    supabase: createMockChain(),
+  };
+});
 
 describe('Evaluation Service - Error Handling', () => {
   const mockSubmission: StoredSubmission = {
@@ -621,31 +630,27 @@ describe('Evaluation Service - Error Handling', () => {
         model: 'gpt-5-mini',
       });
 
-      // Mock the supabase module's from method to simulate database error
+      // Get the mocked supabase and override single() to return an error for evaluations table
       const supabaseModule = await import('../lib/supabase');
-      const fromSpy = vi.spyOn(supabaseModule.supabase, 'from');
+      const singleSpy = vi.spyOn(supabaseModule.supabase, 'single' as any);
 
-      fromSpy.mockReturnValueOnce({
-        insert: vi.fn(() => ({
-          select: vi.fn(() => ({
-            single: vi.fn(() => ({
-              data: null,
-              error: { message: 'Database error' },
-            })),
-          })),
-        })),
-      } as any);
+      // First call is for evaluation_runs (should succeed)
+      // Second call is for evaluations (should fail)
+      singleSpy
+        .mockReturnValueOnce({
+          data: { id: 'run-1' },
+          error: null,
+        })
+        .mockReturnValueOnce({
+          data: null,
+          error: { message: 'Database error' },
+        });
 
-      try {
-        const result = await runEvaluations('queue-1');
+      const result = await runEvaluations('queue-1');
 
-        // Should fail when database save fails
-        expect(result.failed).toBe(1);
-        expect(result.completed).toBe(0);
-      } finally {
-        // Restore the spy
-        fromSpy.mockRestore();
-      }
+      // Should fail when database save fails
+      expect(result.failed).toBe(1);
+      expect(result.completed).toBe(0);
     });
   });
 

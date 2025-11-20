@@ -3,10 +3,13 @@
  */
 
 import { useState } from 'react';
-import { X, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { overrideEvaluation } from '../../services/evaluationService';
 import { getErrorMessage } from '../../lib/errors';
+import { StyledModal } from '../ui/StyledModal';
+import { StyledButton } from '../ui/StyledButton';
+import { StyledInput, StyledTextarea, StyledLabel } from '../ui/StyledInput';
 import type { Evaluation, HumanVerdict } from '../../types';
 
 interface EditVerdictModalProps {
@@ -92,201 +95,132 @@ export function EditVerdictModal({
   const isDisagreement =
     verdict && verdict !== evaluation.verdict && verdict !== 'bad_data';
 
+  // Footer content
+  const footer = (
+    <div style={footerStyles.container}>
+      <StyledButton variant="secondary" size="medium" onClick={onClose}>
+        Cancel
+      </StyledButton>
+      <StyledButton
+        variant="primary"
+        size="medium"
+        onClick={handleSubmit}
+        disabled={
+          submitting || !verdict || !reasoning.trim() || !reviewerName.trim()
+        }
+      >
+        {submitting ? 'Saving...' : 'Save Verdict'}
+      </StyledButton>
+    </div>
+  );
+
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div style={styles.header}>
-          <div>
-            <h2 style={styles.title}>Edit Verdict</h2>
-            <p style={styles.subtitle}>Override the AI judge's decision</p>
+    <StyledModal
+      isOpen={true}
+      onClose={onClose}
+      title="Edit Verdict"
+      footer={footer}
+      maxWidth="700px"
+    >
+      {/* Subtitle */}
+      <div style={contentStyles.subtitle}>Override the AI judge's decision</div>
+
+      {/* AI Verdict Display */}
+      <div style={contentStyles.section}>
+        <h3 style={contentStyles.sectionTitle}>AI Judge Verdict</h3>
+        <div style={contentStyles.aiVerdictBox}>
+          <div style={contentStyles.verdictRow}>
+            <span style={contentStyles.label}>Verdict:</span>
+            <span style={contentStyles.value}>
+              {evaluation.verdict.toUpperCase()}
+            </span>
           </div>
-          <button onClick={onClose} style={styles.closeButton}>
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div style={styles.content}>
-          {/* AI Verdict Display */}
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>AI Judge Verdict</h3>
-            <div style={styles.aiVerdictBox}>
-              <div style={styles.verdictRow}>
-                <span style={styles.label}>Verdict:</span>
-                <span style={styles.value}>
-                  {evaluation.verdict.toUpperCase()}
-                </span>
-              </div>
-              <div style={styles.verdictRow}>
-                <span style={styles.label}>Judge:</span>
-                <span style={styles.value}>{evaluation.judge_name}</span>
-              </div>
-              <div style={{ marginTop: '12px' }}>
-                <span style={styles.label}>Reasoning:</span>
-                <p style={styles.aiReasoning}>{evaluation.reasoning}</p>
-              </div>
-            </div>
+          <div style={contentStyles.verdictRow}>
+            <span style={contentStyles.label}>Judge:</span>
+            <span style={contentStyles.value}>{evaluation.judge_name}</span>
           </div>
-
-          {/* Human Verdict Selection */}
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>Your Verdict</h3>
-            <div style={styles.verdictGrid}>
-              {verdictOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setVerdict(option.value)}
-                  style={{
-                    ...styles.verdictOption,
-                    ...(verdict === option.value
-                      ? styles.verdictOptionSelected
-                      : {}),
-                  }}
-                >
-                  <div style={styles.verdictOptionIcon}>{option.icon}</div>
-                  <div style={styles.verdictOptionContent}>
-                    <div style={styles.verdictOptionLabel}>{option.label}</div>
-                    <div style={styles.verdictOptionDescription}>
-                      {option.description}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+          <div style={{ marginTop: '12px' }}>
+            <span style={contentStyles.label}>Reasoning:</span>
+            <p style={contentStyles.aiReasoning}>{evaluation.reasoning}</p>
           </div>
-
-          {/* Disagreement Warning */}
-          {isDisagreement && (
-            <div style={styles.disagreementWarning}>
-              <AlertCircle size={16} />
-              <div>
-                <strong>Disagreement Detected:</strong> Your verdict differs
-                from the AI judge. This will be used to improve the judge's
-                rubric and system prompt.
-              </div>
-            </div>
-          )}
-
-          {/* Reasoning Input */}
-          <div style={styles.section}>
-            <label htmlFor="reasoning" style={styles.sectionTitle}>
-              Your Reasoning *
-            </label>
-            <textarea
-              id="reasoning"
-              value={reasoning}
-              onChange={(e) => setReasoning(e.target.value)}
-              placeholder="Explain why you're making this decision. For disagreements, be specific about what the AI judge got wrong."
-              style={styles.textarea}
-              rows={4}
-            />
-          </div>
-
-          {/* Reviewer Name Input */}
-          <div style={styles.section}>
-            <label htmlFor="reviewer" style={styles.sectionTitle}>
-              Your Name *
-            </label>
-            <input
-              id="reviewer"
-              type="text"
-              value={reviewerName}
-              onChange={(e) => setReviewerName(e.target.value)}
-              placeholder="Enter your name or email"
-              style={styles.input}
-            />
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div style={styles.footer}>
-          <button onClick={onClose} style={styles.cancelButton}>
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={
-              submitting ||
-              !verdict ||
-              !reasoning.trim() ||
-              !reviewerName.trim()
-            }
-            style={{
-              ...styles.submitButton,
-              ...(submitting ||
-              !verdict ||
-              !reasoning.trim() ||
-              !reviewerName.trim()
-                ? styles.submitButtonDisabled
-                : {}),
-            }}
-          >
-            {submitting ? 'Saving...' : 'Save Verdict'}
-          </button>
         </div>
       </div>
-    </div>
+
+      {/* Human Verdict Selection */}
+      <div style={contentStyles.section}>
+        <h3 style={contentStyles.sectionTitle}>Your Verdict</h3>
+        <div style={contentStyles.verdictGrid}>
+          {verdictOptions.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => setVerdict(option.value)}
+              style={{
+                ...contentStyles.verdictOption,
+                ...(verdict === option.value
+                  ? contentStyles.verdictOptionSelected
+                  : {}),
+              }}
+            >
+              <div style={contentStyles.verdictOptionIcon}>{option.icon}</div>
+              <div style={contentStyles.verdictOptionContent}>
+                <div style={contentStyles.verdictOptionLabel}>
+                  {option.label}
+                </div>
+                <div style={contentStyles.verdictOptionDescription}>
+                  {option.description}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Disagreement Warning */}
+      {isDisagreement && (
+        <div style={contentStyles.disagreementWarning}>
+          <AlertCircle size={16} />
+          <div>
+            <strong>Disagreement Detected:</strong> Your verdict differs from
+            the AI judge. This will be used to improve the judge's rubric and
+            system prompt.
+          </div>
+        </div>
+      )}
+
+      {/* Reasoning Input */}
+      <div style={contentStyles.section}>
+        <StyledLabel htmlFor="reasoning">Your Reasoning *</StyledLabel>
+        <StyledTextarea
+          id="reasoning"
+          value={reasoning}
+          onChange={(e) => setReasoning(e.target.value)}
+          placeholder="Explain why you're making this decision. For disagreements, be specific about what the AI judge got wrong."
+          rows={4}
+        />
+      </div>
+
+      {/* Reviewer Name Input */}
+      <div style={contentStyles.section}>
+        <StyledLabel htmlFor="reviewer">Your Name *</StyledLabel>
+        <StyledInput
+          id="reviewer"
+          type="text"
+          value={reviewerName}
+          onChange={(e) => setReviewerName(e.target.value)}
+          placeholder="Enter your name or email"
+        />
+      </div>
+    </StyledModal>
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
-  overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-    padding: '20px',
-  },
-  modal: {
-    backgroundColor: '#fff',
-    borderRadius: '12px',
-    boxShadow:
-      '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-    maxWidth: '700px',
-    width: '100%',
-    maxHeight: '90vh',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    padding: '24px',
-    borderBottom: '1px solid #e5e7eb',
-  },
-  title: {
-    fontSize: '20px',
-    fontWeight: 600,
-    color: '#111827',
-    margin: '0 0 4px 0',
-  },
+// Styles for modal content (kept as inline)
+const contentStyles: Record<string, React.CSSProperties> = {
   subtitle: {
     fontSize: '14px',
     color: '#6b7280',
-    margin: 0,
-  },
-  closeButton: {
-    backgroundColor: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    padding: '4px',
-    color: '#6b7280',
-    borderRadius: '6px',
-    transition: 'background-color 0.15s',
-  },
-  content: {
-    padding: '24px',
-    overflowY: 'auto',
-    flex: 1,
+    marginBottom: '24px',
+    margin: '0 0 24px 0',
   },
   section: {
     marginBottom: '24px',
@@ -297,6 +231,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#374151',
     marginBottom: '12px',
     display: 'block',
+    margin: '0 0 12px 0',
   },
   aiVerdictBox: {
     backgroundColor: '#f9fafb',
@@ -375,59 +310,14 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '13px',
     color: '#92400e',
   },
-  textarea: {
-    width: '100%',
-    padding: '12px',
-    fontSize: '14px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    fontFamily: 'inherit',
-    resize: 'vertical',
-    minHeight: '100px',
-    boxSizing: 'border-box',
-  },
-  input: {
-    width: '100%',
-    padding: '12px',
-    fontSize: '14px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    fontFamily: 'inherit',
-    boxSizing: 'border-box',
-  },
-  footer: {
+};
+
+// Styles for footer (kept as inline)
+const footerStyles: Record<string, React.CSSProperties> = {
+  container: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: '12px',
-    padding: '16px 24px',
-    borderTop: '1px solid #e5e7eb',
-    backgroundColor: '#f9fafb',
-  },
-  cancelButton: {
-    padding: '10px 20px',
-    fontSize: '14px',
-    fontWeight: 500,
-    color: '#374151',
-    backgroundColor: '#fff',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    transition: 'background-color 0.15s',
-  },
-  submitButton: {
-    padding: '10px 20px',
-    fontSize: '14px',
-    fontWeight: 500,
-    color: '#fff',
-    backgroundColor: '#4f46e5',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    transition: 'background-color 0.15s',
-  },
-  submitButtonDisabled: {
-    backgroundColor: '#9ca3af',
-    cursor: 'not-allowed',
   },
 };

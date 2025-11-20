@@ -15,6 +15,8 @@ import {
   Calendar,
   Edit3,
 } from 'lucide-react';
+import { StyledButton } from '../ui/StyledButton';
+import { StyledBadge } from '../ui/StyledBadge';
 import { EditVerdictModal } from './EditVerdictModal';
 import { supabase } from '../../lib/supabase';
 import type { Evaluation, EvaluationRun, StoredSubmission } from '../../types';
@@ -229,14 +231,20 @@ export function ResultsTable({
                   </div>
                 </td>
                 <td style={styles.td}>
-                  <button
+                  <StyledButton
+                    variant="primary"
+                    size="small"
                     onClick={() => handleEditClick(evaluation)}
-                    style={styles.editButton}
                     title="Edit verdict"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
                   >
                     <Edit3 size={14} />
                     <span>Edit</span>
-                  </button>
+                  </StyledButton>
                 </td>
               </tr>
             );
@@ -414,55 +422,44 @@ function VerdictBadge({
         inconclusive: <HelpCircle size={14} />,
       };
       return {
-        color: '#9ca3af',
-        backgroundColor: '#f3f4f6',
         icon: iconMap[verdict as keyof typeof iconMap] || (
           <HelpCircle size={14} />
         ),
+        variant: 'pending' as const,
       };
     }
 
     switch (verdict) {
       case 'pass':
         return {
-          color: '#10b981',
-          backgroundColor: '#d1fae5',
           icon: <CheckCircle size={14} />,
+          variant: 'pass' as const,
         };
       case 'fail':
         return {
-          color: '#ef4444',
-          backgroundColor: '#fee2e2',
           icon: <XCircle size={14} />,
+          variant: 'fail' as const,
         };
       case 'inconclusive':
         return {
-          color: '#f59e0b',
-          backgroundColor: '#fef3c7',
           icon: <HelpCircle size={14} />,
+          variant: 'inconclusive' as const,
         };
       default:
         return {
-          color: '#6b7280',
-          backgroundColor: '#f3f4f6',
           icon: <HelpCircle size={14} />,
+          variant: 'pending' as const,
         };
     }
   };
 
-  const { color, backgroundColor, icon } = getVerdictStyle();
+  const { icon, variant } = getVerdictStyle();
 
   return (
-    <div
-      style={{
-        ...styles.badge,
-        color,
-        backgroundColor,
-      }}
-    >
+    <StyledBadge variant={variant} style={{ gap: '6px' }}>
       {icon}
       <span style={{ textTransform: 'capitalize' }}>{verdict}</span>
-    </div>
+    </StyledBadge>
   );
 }
 
@@ -471,48 +468,38 @@ function HumanVerdictBadge({ verdict }: { verdict: string }) {
     switch (verdict) {
       case 'pass':
         return {
-          color: '#059669',
-          backgroundColor: '#d1fae5',
           icon: <CheckCircle size={14} />,
           label: 'Pass',
+          variant: 'pass' as const,
         };
       case 'fail':
         return {
-          color: '#dc2626',
-          backgroundColor: '#fee2e2',
           icon: <XCircle size={14} />,
           label: 'Fail',
+          variant: 'fail' as const,
         };
       case 'bad_data':
         return {
-          color: '#7c3aed',
-          backgroundColor: '#ede9fe',
           icon: <AlertCircle size={14} />,
           label: 'Bad Data',
+          variant: 'bad_data' as const,
         };
       default:
         return {
-          color: '#6b7280',
-          backgroundColor: '#f3f4f6',
           icon: <HelpCircle size={14} />,
           label: verdict,
+          variant: 'pending' as const,
         };
     }
   };
 
-  const { color, backgroundColor, icon, label } = getVerdictStyle();
+  const { icon, label, variant } = getVerdictStyle();
 
   return (
-    <div
-      style={{
-        ...styles.badge,
-        color,
-        backgroundColor,
-      }}
-    >
+    <StyledBadge variant={variant} style={{ gap: '6px' }}>
       {icon}
       <span>{label}</span>
-    </div>
+    </StyledBadge>
   );
 }
 
@@ -570,16 +557,6 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#000',
     border: '1px solid #eaeaea',
   },
-  badge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '6px 12px',
-    borderRadius: '16px',
-    fontSize: '13px',
-    fontWeight: 500,
-    width: 'fit-content',
-  },
   reasoning: {
     maxWidth: '400px',
     lineHeight: '1.5',
@@ -590,20 +567,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '13px',
     color: '#999',
     whiteSpace: 'pre-line',
-  },
-  editButton: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '8px 12px',
-    fontSize: '13px',
-    fontWeight: 500,
-    color: '#4f46e5',
-    backgroundColor: '#eef2ff',
-    border: '1px solid #c7d2fe',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    transition: 'all 0.15s',
   },
   questionCell: {
     maxWidth: '300px',
