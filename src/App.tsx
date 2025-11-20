@@ -17,8 +17,9 @@ import { QueuePage } from './pages/QueuePage';
 import { ResultsPage } from './pages/ResultsPage';
 import JudgePerformanceDashboard from './pages/JudgePerformanceDashboard';
 import JudgeAnalysisPage from './pages/JudgeAnalysisPage';
+import { HumanReviewQueue } from './pages/HumanReviewQueue';
 import logo from './assets/besimple-logo.png';
-import { TrendingUp, Settings } from 'lucide-react';
+import { TrendingUp, Settings, UserCheck } from 'lucide-react';
 import './App.css';
 
 function AppContent() {
@@ -68,6 +69,40 @@ function AppContent() {
                 alignItems: 'center',
               }}
             >
+              <button
+                onClick={() => navigate('/human-review')}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  border: 'none',
+                  borderRadius: '8px',
+                  background:
+                    location.pathname === '/human-review'
+                      ? 'rgba(227, 158, 53, 0.1)'
+                      : 'transparent',
+                  color: '#E39E35',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (location.pathname !== '/human-review') {
+                    e.currentTarget.style.background =
+                      'rgba(227, 158, 53, 0.1)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (location.pathname !== '/human-review') {
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+              >
+                <UserCheck size={16} strokeWidth={2.5} />
+                <span>Human Review</span>
+              </button>
               <button
                 onClick={() => navigate('/judge-performance')}
                 style={{
@@ -155,6 +190,7 @@ function AppContent() {
             <Route path="/queues/:queueId" element={<QueuePage />} />
             <Route path="/queues/:queueId/results" element={<ResultsPage />} />
             <Route path="/judges" element={<JudgesPage />} />
+            <Route path="/human-review" element={<HumanReviewQueue />} />
             <Route
               path="/judge-performance"
               element={<JudgePerformanceDashboard />}

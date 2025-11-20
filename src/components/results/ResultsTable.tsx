@@ -2,7 +2,7 @@
  * ResultsTable - Displays evaluation results in a table
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   AlertCircle,
   CheckCircle,
@@ -16,7 +16,8 @@ import {
   Edit3,
 } from 'lucide-react';
 import { EditVerdictModal } from './EditVerdictModal';
-import type { Evaluation, EvaluationRun } from '../../types';
+import { supabase } from '../../lib/supabase';
+import type { Evaluation, EvaluationRun, StoredSubmission } from '../../types';
 
 interface ResultsTableProps {
   evaluations: Evaluation[];
@@ -24,6 +25,11 @@ interface ResultsTableProps {
   currentRun: EvaluationRun | null;
   allRuns: EvaluationRun[];
   onEvaluationUpdated?: () => void;
+}
+
+interface EnrichedEvaluation extends Evaluation {
+  questionText?: string;
+  answerData?: any;
 }
 
 export function ResultsTable({
@@ -36,6 +42,68 @@ export function ResultsTable({
   const [editingEvaluation, setEditingEvaluation] = useState<Evaluation | null>(
     null
   );
+  const [enrichedEvaluations, setEnrichedEvaluations] = useState<
+    EnrichedEvaluation[]
+  >([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch submission data to enrich evaluations
+  useEffect(() => {
+    const enrichEvaluations = async () => {
+      if (evaluations.length === 0) {
+        setEnrichedEvaluations([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        // Get unique submission IDs
+        const submissionIds = [
+          ...new Set(evaluations.map((e) => e.submission_id)),
+        ];
+
+        // Fetch all submissions
+        const { data: submissions, error } = await supabase
+          .from('submissions')
+          .select('*')
+          .in('id', submissionIds);
+
+        if (error) throw error;
+
+        // Create a map for quick lookup
+        const submissionMap = new Map<string, StoredSubmission>(
+          submissions?.map((s) => [s.id, s]) || []
+        );
+
+        // Enrich evaluations with question text and answer
+        const enriched: EnrichedEvaluation[] = evaluations.map((evaluation) => {
+          const submission = submissionMap.get(evaluation.submission_id);
+          if (!submission) return evaluation;
+
+          const question = submission.questions.find(
+            (q) => q.data.id === evaluation.question_id
+          );
+          const answer = submission.answers[evaluation.question_id];
+
+          return {
+            ...evaluation,
+            questionText: question?.data?.questionText,
+            answerData: answer,
+          };
+        });
+
+        setEnrichedEvaluations(enriched);
+      } catch (err) {
+        console.error('Failed to enrich evaluations:', err);
+        // Fall back to original evaluations
+        setEnrichedEvaluations(evaluations);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    enrichEvaluations();
+  }, [evaluations]);
 
   const handleEditClick = (evaluation: Evaluation) => {
     setEditingEvaluation(evaluation);
@@ -82,6 +150,8 @@ export function ResultsTable({
     );
   }
 
+  const displayEvaluations = loading ? evaluations : enrichedEvaluations;
+
   return (
     <div style={styles.tableContainer}>
       <table style={styles.table}>
@@ -89,14 +159,14 @@ export function ResultsTable({
           <tr>
             <th style={styles.th}>
               <div style={styles.thContent}>
-                <FileText size={14} />
-                <span>Submission</span>
+                <MessageSquare size={14} />
+                <span>Question</span>
               </div>
             </th>
             <th style={styles.th}>
               <div style={styles.thContent}>
-                <MessageSquare size={14} />
-                <span>Question</span>
+                <FileText size={14} />
+                <span>Answer</span>
               </div>
             </th>
             <th style={styles.th}>
@@ -132,14 +202,19 @@ export function ResultsTable({
           </tr>
         </thead>
         <tbody>
-          {evaluations.map((evaluation) => {
+          {displayEvaluations.map((evaluation) => {
+            const enriched = evaluation as EnrichedEvaluation;
             return (
               <tr key={evaluation.id} style={styles.tr}>
                 <td style={styles.td}>
-                  <code style={styles.code}>{evaluation.submission_id}</code>
+                  <div style={styles.questionCell}>
+                    {enriched.questionText || (
+                      <code style={styles.code}>{evaluation.question_id}</code>
+                    )}
+                  </div>
                 </td>
                 <td style={styles.td}>
-                  <code style={styles.code}>{evaluation.question_id}</code>
+                  <AnswerCell answerData={enriched.answerData} />
                 </td>
                 <td style={styles.td}>{evaluation.judge_name}</td>
                 <td style={styles.td}>
@@ -150,9 +225,7 @@ export function ResultsTable({
                 </td>
                 <td style={styles.td}>
                   <div style={styles.timestamp}>
-                    {new Date(evaluation.created_at).toLocaleDateString()}
-                    <br />
-                    {new Date(evaluation.created_at).toLocaleTimeString()}
+                    {formatTimestamp(evaluation.created_at)}
                   </div>
                 </td>
                 <td style={styles.td}>
@@ -179,6 +252,66 @@ export function ResultsTable({
           onComplete={handleModalComplete}
         />
       )}
+    </div>
+  );
+}
+
+function formatTimestamp(isoString: string): string {
+  // Supabase returns timestamps without 'Z', so append it to treat as UTC
+  const utcString = isoString.endsWith('Z') ? isoString : `${isoString}Z`;
+  const date = new Date(utcString);
+
+  const dateStr = date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+  const timeStr = date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  return `${dateStr}\n${timeStr}`;
+}
+
+function AnswerCell({ answerData }: { answerData: any }) {
+  if (!answerData) {
+    return <span style={{ color: '#9ca3af', fontSize: '13px' }}>N/A</span>;
+  }
+
+  // Format answer based on type
+  let displayText = '';
+  if (typeof answerData === 'string') {
+    displayText = answerData;
+  } else if (answerData.text) {
+    displayText = answerData.text;
+  } else if (answerData.choice) {
+    const choice = Array.isArray(answerData.choice)
+      ? answerData.choice.join(', ')
+      : answerData.choice;
+    displayText = `Choice: ${choice}`;
+    if (answerData.reasoning) {
+      displayText += `\nReasoning: ${answerData.reasoning}`;
+    }
+  } else if (answerData.reasoning) {
+    displayText = answerData.reasoning;
+  } else {
+    displayText = JSON.stringify(answerData);
+  }
+
+  return (
+    <div
+      style={{
+        maxWidth: '300px',
+        fontSize: '13px',
+        color: '#374151',
+        lineHeight: '1.5',
+        whiteSpace: 'pre-wrap',
+      }}
+    >
+      {displayText}
     </div>
   );
 }
@@ -445,6 +578,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '16px',
     fontSize: '13px',
     fontWeight: 500,
+    width: 'fit-content',
   },
   reasoning: {
     maxWidth: '400px',
@@ -455,7 +589,7 @@ const styles: Record<string, React.CSSProperties> = {
   timestamp: {
     fontSize: '13px',
     color: '#999',
-    whiteSpace: 'nowrap',
+    whiteSpace: 'pre-line',
   },
   editButton: {
     display: 'inline-flex',
@@ -470,5 +604,12 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '6px',
     cursor: 'pointer',
     transition: 'all 0.15s',
+  },
+  questionCell: {
+    maxWidth: '300px',
+    fontSize: '14px',
+    color: '#111827',
+    lineHeight: '1.5',
+    fontWeight: 500,
   },
 };

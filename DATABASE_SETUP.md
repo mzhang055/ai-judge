@@ -264,6 +264,52 @@ CREATE TRIGGER trigger_insert_review_queue
   FOR EACH ROW
   EXECUTE FUNCTION insert_into_review_queue();
 
+-- NOTE: After running the schema for the first time, you may need to backfill
+-- existing inconclusive evaluations into the review queue. Run this once:
+/*
+INSERT INTO human_review_queue (
+  evaluation_id,
+  queue_id,
+  submission_id,
+  question_id,
+  judge_name,
+  ai_verdict,
+  ai_reasoning,
+  priority,
+  flagged_reason,
+  status
+)
+SELECT
+  e.id,
+  s.queue_id,
+  e.submission_id,
+  e.question_id,
+  e.judge_name,
+  e.verdict,
+  e.reasoning,
+  'medium',
+  'ai_inconclusive',
+  CASE
+    WHEN e.review_status = 'completed' THEN 'completed'
+    ELSE 'pending'
+  END
+FROM evaluations e
+JOIN submissions s ON e.submission_id = s.id
+WHERE e.verdict = 'inconclusive'
+  AND e.id NOT IN (SELECT evaluation_id FROM human_review_queue)
+ON CONFLICT (evaluation_id) DO NOTHING;
+
+UPDATE evaluations
+SET
+  requires_human_review = true,
+  review_status = CASE
+    WHEN review_status = 'completed' THEN 'completed'
+    ELSE 'pending'
+  END
+WHERE verdict = 'inconclusive'
+  AND (requires_human_review IS NULL OR requires_human_review = false);
+*/
+
 
 -- -----------------------------------------------------------------------------
 -- 8. HUMAN REVIEW COMPLETION FUNCTION
