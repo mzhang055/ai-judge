@@ -1,417 +1,77 @@
 /**
- * FileUpload Component
+ * UploadPageUI Presentation Component
  *
- * Handles JSON file upload, validation, and persistence to Supabase.
- * Supports drag-and-drop and click-to-browse file selection.
- * Also supports uploading file attachments (images, PDFs) for submissions.
- *
- * @example
- * ```tsx
- * <FileUpload onUploadComplete={(count) => console.log(`Uploaded ${count} submissions`)} />
- * ```
+ * Pure presentation component that renders the file upload interface.
+ * All state and handlers are passed as props from UploadPage container.
  */
-import { useState, useRef, useEffect } from 'react';
-import type { DragEvent, ChangeEvent } from 'react';
-import { Upload, Paperclip, X, AlertCircle } from 'lucide-react';
-import toast from 'react-hot-toast';
-import {
-  parseJSONFile,
-  validateSubmissions,
-  saveSubmissions,
-} from '../services/submissionService';
-import {
-  uploadFiles,
-  validateFile,
-  SUPPORTED_EXTENSIONS,
-} from '../services/fileStorageService';
-import type { Submission, UploadStatus } from '../types';
+import type { DragEvent, ChangeEvent, RefObject } from 'react';
+import { Upload, Paperclip, X } from 'lucide-react';
+import { SUPPORTED_EXTENSIONS } from '../../services/fileStorageService';
+import type { Submission, UploadStatus } from '../../types';
+import { StyledButton } from './StyledButton';
 
-export interface FileUploadProps {
-  /** Callback fired when upload completes successfully */
-  onUploadComplete?: ((submissionCount: number) => void) | (() => void);
-  /** Callback fired when an error occurs */
-  onError?: ((error: string) => void) | (() => void);
-  /** Optional CSS class name */
-  className?: string;
-  /** Callback fired when user clicks Skip button */
+export interface UploadPageUIProps {
+  className: string;
+  uploadStatus: UploadStatus;
+  isDragging: boolean;
+  isDraggingAttachments: boolean;
+  previewData: Submission[] | null;
+  validatedData: Submission[] | null;
+  showPreview: boolean;
+  attachmentFiles: File[];
+  fileInputRef: RefObject<HTMLInputElement | null>;
+  attachmentInputRef: RefObject<HTMLInputElement | null>;
+  isProcessing: boolean;
+  onFileSelect: (event: ChangeEvent<HTMLInputElement>) => void;
+  onDragOver: (event: DragEvent<HTMLDivElement>) => void;
+  onDragLeave: () => void;
+  onDrop: (event: DragEvent<HTMLDivElement>) => void;
+  onClick: () => void;
+  onConfirmUpload: () => void;
+  onContinueToPreview: () => void;
+  onBack: () => void;
+  onAttachmentSelect: (event: ChangeEvent<HTMLInputElement>) => void;
+  onRemoveAttachment: (fileIndex: number) => void;
+  onAttachmentDragOver: (event: DragEvent<HTMLDivElement>) => void;
+  onAttachmentDragLeave: () => void;
+  onAttachmentDrop: (event: DragEvent<HTMLDivElement>) => void;
+  onAttachmentClick: () => void;
   onSkip?: () => void;
+  setUploadStatus: (status: UploadStatus) => void;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-
 /**
- * FileUpload component for uploading and validating submission JSON files
+ * UploadPageUI - Pure presentation component for file upload interface
  */
-export function FileUpload({
-  onUploadComplete,
-  onError,
-  className = '',
+export function UploadPageUI({
+  className,
+  uploadStatus,
+  isDragging,
+  isDraggingAttachments,
+  previewData,
+  validatedData,
+  showPreview,
+  attachmentFiles,
+  fileInputRef,
+  attachmentInputRef,
+  isProcessing,
+  onFileSelect,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onClick,
+  onConfirmUpload,
+  onContinueToPreview,
+  onBack,
+  onAttachmentSelect,
+  onRemoveAttachment,
+  onAttachmentDragOver,
+  onAttachmentDragLeave,
+  onAttachmentDrop,
+  onAttachmentClick,
   onSkip,
-}: FileUploadProps) {
-  const [uploadStatus, setUploadStatus] = useState<UploadStatus>({
-    status: 'idle',
-  });
-  const [isDragging, setIsDragging] = useState(false);
-  const [isDraggingAttachments, setIsDraggingAttachments] = useState(false);
-  const [previewData, setPreviewData] = useState<Submission[] | null>(null);
-  const [validatedData, setValidatedData] = useState<Submission[] | null>(null); // JSON validated but not previewing yet
-  const [showPreview, setShowPreview] = useState(false); // Control when to show preview
-  const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]); // All uploaded attachment files
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const attachmentInputRef = useRef<HTMLInputElement>(null);
-  const timeoutRef = useRef<number | null>(null);
-  const isMountedRef = useRef(true);
-
-  // Cleanup timeout and track mounted state
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleFile = async (file: File) => {
-    // Check file size
-    if (file.size > MAX_FILE_SIZE) {
-      const error = `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB`;
-      setUploadStatus({ status: 'error', message: error });
-      onError?.(error);
-      toast.error(error);
-      return;
-    }
-
-    // Check file type
-    if (!file.name.endsWith('.json')) {
-      const error = 'Please upload a JSON file';
-      setUploadStatus({ status: 'error', message: error });
-      onError?.(error);
-      toast.error(error);
-      return;
-    }
-
-    try {
-      // Parse JSON
-      setUploadStatus({
-        status: 'validating',
-        message: 'Parsing JSON file...',
-      });
-      const data = await parseJSONFile(file);
-
-      // Validate
-      setUploadStatus({
-        status: 'validating',
-        message: 'Validating submissions...',
-      });
-      const validationResult = validateSubmissions(data);
-
-      if (!validationResult.valid) {
-        const error = `Validation failed:\n${validationResult.errors.join('\n')}`;
-        setUploadStatus({ status: 'error', message: error });
-        onError?.(error);
-        toast.error(error);
-        return;
-      }
-
-      // Store validated data but don't show preview yet
-      const submissions = data as Submission[];
-      setValidatedData(submissions);
-      setUploadStatus({ status: 'idle' });
-      toast.success(
-        `JSON validated: ${submissions.length} submission${submissions.length !== 1 ? 's' : ''}`
-      );
-    } catch (error) {
-      let errorMessage = 'Unknown error occurred';
-
-      if (error instanceof Error) {
-        errorMessage = error.message;
-
-        // Check for network errors
-        if (error.message.includes('Failed to fetch')) {
-          errorMessage =
-            'Network error: Unable to connect. Please check your internet connection and try again.';
-        }
-      }
-
-      setUploadStatus({ status: 'error', message: errorMessage });
-      onError?.(errorMessage);
-      toast.error(errorMessage);
-    }
-  };
-
-  const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      handleFile(file);
-    }
-  };
-
-  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setIsDragging(false);
-
-    const file = event.dataTransfer.files[0];
-    if (file) {
-      handleFile(file);
-    }
-  };
-
-  const handleClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleConfirmUpload = async () => {
-    if (!previewData) return;
-
-    try {
-      // If there are attachment files, assign them to the first submission
-      // (User can see this in preview and we'll improve assignment later)
-      let submissionsWithAttachments = [...previewData];
-
-      if (attachmentFiles.length > 0) {
-        setUploadStatus({
-          status: 'uploading',
-          message: 'Uploading attachments...',
-          totalSubmissions: previewData.length,
-          uploadedSubmissions: 0,
-        });
-
-        // Upload all files to storage for the first submission
-        const firstSubmissionId = previewData[0].id;
-        const attachments = await uploadFiles(
-          attachmentFiles,
-          firstSubmissionId
-        );
-
-        // Attach to first submission
-        submissionsWithAttachments[0] = {
-          ...previewData[0],
-          attachments,
-        };
-      }
-
-      // Check if still mounted before updating state
-      if (!isMountedRef.current) return;
-
-      setUploadStatus({
-        status: 'uploading',
-        message: 'Saving to database...',
-        totalSubmissions: previewData.length,
-        uploadedSubmissions: 0,
-      });
-
-      const savedIds = await saveSubmissions(submissionsWithAttachments);
-
-      // Check if still mounted before updating state
-      if (!isMountedRef.current) return;
-
-      setUploadStatus({
-        status: 'success',
-        message: `Successfully uploaded ${savedIds.length} submissions`,
-        totalSubmissions: previewData.length,
-        uploadedSubmissions: savedIds.length,
-      });
-
-      // Show success toast
-      const message =
-        attachmentFiles.length > 0
-          ? `Successfully uploaded ${savedIds.length} submission${savedIds.length !== 1 ? 's' : ''} with ${attachmentFiles.length} attachment${attachmentFiles.length !== 1 ? 's' : ''}!`
-          : `Successfully uploaded ${savedIds.length} submission${savedIds.length !== 1 ? 's' : ''}!`;
-      toast.success(message);
-
-      onUploadComplete?.(savedIds.length);
-
-      // Reset after 3 seconds
-      timeoutRef.current = setTimeout(() => {
-        if (!isMountedRef.current) return;
-        setUploadStatus({ status: 'idle' });
-        setPreviewData(null);
-        setAttachmentFiles([]);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-        if (attachmentInputRef.current) {
-          attachmentInputRef.current.value = '';
-        }
-      }, 3000);
-    } catch (error) {
-      // Check if still mounted before updating state
-      if (!isMountedRef.current) return;
-
-      let errorMessage = 'Unknown error occurred';
-
-      if (error instanceof Error) {
-        errorMessage = error.message;
-
-        // Check for network errors
-        if (error.message.includes('Failed to fetch')) {
-          errorMessage =
-            'Network error: Unable to connect to database. Please check your internet connection and try again.';
-        }
-      }
-
-      setUploadStatus({ status: 'error', message: errorMessage });
-      onError?.(errorMessage);
-    }
-  };
-
-  const handleContinueToPreview = () => {
-    if (!validatedData) {
-      toast.error('Please upload a JSON file first');
-      return;
-    }
-    setPreviewData(validatedData);
-    setShowPreview(true);
-  };
-
-  const handleBack = () => {
-    setPreviewData(null);
-    setValidatedData(null);
-    setShowPreview(false);
-    setAttachmentFiles([]);
-    setUploadStatus({ status: 'idle' });
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-    if (attachmentInputRef.current) {
-      attachmentInputRef.current.value = '';
-    }
-  };
-
-  const handleAttachmentSelect = (event: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    if (files.length === 0) return;
-
-    // Validate all files
-    const errors: string[] = [];
-    files.forEach((file) => {
-      const validation = validateFile(file);
-      if (!validation.valid) {
-        errors.push(validation.error!);
-      }
-    });
-
-    if (errors.length > 0) {
-      toast.error(errors.join('\n'));
-      return;
-    }
-
-    // Add to attachment files array
-    setAttachmentFiles((prev) => [...prev, ...files]);
-
-    // Warn if no JSON file has been uploaded yet
-    if (!validatedData && attachmentFiles.length === 0) {
-      toast.success(
-        `Added ${files.length} attachment${files.length !== 1 ? 's' : ''}`,
-        { duration: 3000 }
-      );
-      toast(
-        () => (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <AlertCircle
-              size={20}
-              style={{ color: '#f59e0b', flexShrink: 0 }}
-            />
-            <span>Don't forget to upload a JSON file (required)</span>
-          </div>
-        ),
-        {
-          duration: 4000,
-        }
-      );
-    } else {
-      toast.success(
-        `Added ${files.length} attachment${files.length !== 1 ? 's' : ''}`
-      );
-    }
-  };
-
-  const handleRemoveAttachment = (fileIndex: number) => {
-    setAttachmentFiles((prev) => prev.filter((_, i) => i !== fileIndex));
-  };
-
-  const handleAttachmentDragOver = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setIsDraggingAttachments(true);
-  };
-
-  const handleAttachmentDragLeave = () => {
-    setIsDraggingAttachments(false);
-  };
-
-  const handleAttachmentDrop = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setIsDraggingAttachments(false);
-
-    const files = Array.from(event.dataTransfer.files);
-    if (files.length === 0) return;
-
-    // Validate all files
-    const errors: string[] = [];
-    const validFiles: File[] = [];
-
-    files.forEach((file) => {
-      const validation = validateFile(file);
-      if (!validation.valid) {
-        errors.push(validation.error!);
-      } else {
-        validFiles.push(file);
-      }
-    });
-
-    if (errors.length > 0) {
-      toast.error(errors.join('\n'));
-    }
-
-    if (validFiles.length > 0) {
-      setAttachmentFiles((prev) => [...prev, ...validFiles]);
-
-      // Warn if no JSON file has been uploaded yet
-      if (!validatedData && attachmentFiles.length === 0) {
-        toast.success(
-          `Added ${validFiles.length} attachment${validFiles.length !== 1 ? 's' : ''}`,
-          { duration: 3000 }
-        );
-        toast(
-          () => (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertCircle
-                size={20}
-                style={{ color: '#f59e0b', flexShrink: 0 }}
-              />
-              <span>Don't forget to upload a JSON file (required)</span>
-            </div>
-          ),
-          {
-            duration: 4000,
-          }
-        );
-      } else {
-        toast.success(
-          `Added ${validFiles.length} attachment${validFiles.length !== 1 ? 's' : ''}`
-        );
-      }
-    }
-  };
-
-  const handleAttachmentClick = () => {
-    attachmentInputRef.current?.click();
-  };
-
-  const isProcessing =
-    uploadStatus.status === 'validating' || uploadStatus.status === 'uploading';
-
+  setUploadStatus,
+}: UploadPageUIProps) {
   // Show preview if data is loaded and showPreview is true
   if (
     showPreview &&
@@ -693,7 +353,7 @@ export function FileUpload({
                       </span>
                     </div>
                     <button
-                      onClick={() => handleRemoveAttachment(index)}
+                      onClick={() => onRemoveAttachment(index)}
                       style={{
                         background: 'transparent',
                         border: 'none',
@@ -724,38 +384,22 @@ export function FileUpload({
         </div>
 
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            onClick={handleBack}
-            style={{
-              flex: 1,
-              padding: '12px 24px',
-              background: '#ffffff',
-              color: '#000000',
-              border: '1px solid #e5e5e5',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: 500,
-            }}
+          <StyledButton
+            onClick={onBack}
+            variant="secondary"
+            size="large"
+            style={{ flex: 1 }}
           >
             Back
-          </button>
-          <button
-            onClick={handleConfirmUpload}
-            style={{
-              flex: 1,
-              padding: '12px 24px',
-              background: '#000000',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: 500,
-            }}
+          </StyledButton>
+          <StyledButton
+            onClick={onConfirmUpload}
+            variant="black"
+            size="large"
+            style={{ flex: 1 }}
           >
             Confirm Upload
-          </button>
+          </StyledButton>
         </div>
       </div>
     );
@@ -770,17 +414,17 @@ export function FileUpload({
             ref={fileInputRef}
             type="file"
             accept=".json"
-            onChange={handleFileSelect}
+            onChange={onFileSelect}
             style={{ display: 'none' }}
             disabled={isProcessing}
           />
 
           <div
             className="upload-zone"
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={handleClick}
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+            onClick={onClick}
             style={{
               border: isDragging ? '2px dashed #000000' : '2px dashed #d1d1d1',
               borderRadius: '16px',
@@ -930,24 +574,16 @@ export function FileUpload({
                 >
                   {uploadStatus.message}
                 </p>
-                <button
+                <StyledButton
                   onClick={(e) => {
                     e.stopPropagation();
                     setUploadStatus({ status: 'idle' });
                   }}
-                  style={{
-                    padding: '10px 20px',
-                    background: '#000000',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                  }}
+                  variant="black"
+                  size="medium"
                 >
                   Try Again
-                </button>
+                </StyledButton>
               </>
             )}
           </div>
@@ -973,17 +609,17 @@ export function FileUpload({
             type="file"
             accept={SUPPORTED_EXTENSIONS.join(',')}
             multiple
-            onChange={handleAttachmentSelect}
+            onChange={onAttachmentSelect}
             style={{ display: 'none' }}
             disabled={isProcessing}
           />
 
           <div
             className="attachment-upload-zone"
-            onDragOver={handleAttachmentDragOver}
-            onDragLeave={handleAttachmentDragLeave}
-            onDrop={handleAttachmentDrop}
-            onClick={handleAttachmentClick}
+            onDragOver={onAttachmentDragOver}
+            onDragLeave={onAttachmentDragLeave}
+            onDrop={onAttachmentDrop}
+            onClick={onAttachmentClick}
             style={{
               border: isDraggingAttachments
                 ? '2px dashed #000000'
@@ -1056,23 +692,19 @@ export function FileUpload({
       {/* Continue Button */}
       {validatedData && (
         <div style={{ marginTop: '32px', textAlign: 'center' }}>
-          <button
-            onClick={handleContinueToPreview}
+          <StyledButton
+            onClick={onContinueToPreview}
             disabled={isProcessing}
+            variant="black"
             style={{
               padding: '14px 48px',
-              background: '#000000',
-              color: '#ffffff',
-              border: 'none',
               borderRadius: '8px',
-              cursor: isProcessing ? 'not-allowed' : 'pointer',
               fontSize: '15px',
               fontWeight: 600,
-              opacity: isProcessing ? 0.5 : 1,
             }}
           >
             Continue to Preview →
-          </button>
+          </StyledButton>
           <div
             style={{
               marginTop: '12px',
@@ -1091,24 +723,19 @@ export function FileUpload({
       {/* Skip Button */}
       {onSkip && !validatedData && (
         <div style={{ marginTop: '32px', textAlign: 'center' }}>
-          <button
+          <StyledButton
             onClick={onSkip}
             disabled={isProcessing}
+            variant="secondary"
             style={{
               padding: '12px 32px',
-              background: 'transparent',
-              color: '#666666',
-              border: '1px solid #e5e5e5',
               borderRadius: '8px',
-              cursor: isProcessing ? 'not-allowed' : 'pointer',
               fontSize: '14px',
               fontWeight: 500,
-              opacity: isProcessing ? 0.5 : 1,
-              transition: 'all 0.15s ease',
             }}
           >
             Skip to Queue
-          </button>
+          </StyledButton>
         </div>
       )}
     </div>

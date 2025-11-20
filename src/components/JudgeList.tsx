@@ -11,6 +11,8 @@ import {
   Calendar,
   Settings,
 } from 'lucide-react';
+import { StyledButton } from './ui/StyledButton';
+import { StyledBadge } from './ui/StyledBadge';
 import type { Judge } from '../types';
 
 interface JudgeListProps {
@@ -105,11 +107,9 @@ export function JudgeList({
 
               {/* Active Status Badge */}
               <td style={styles.td}>
-                {judge.is_active ? (
-                  <span style={styles.activeBadge}>✓ Active</span>
-                ) : (
-                  <span style={styles.inactiveBadge}>✗ Inactive</span>
-                )}
+                <StyledBadge variant={judge.is_active ? 'active' : 'inactive'}>
+                  {judge.is_active ? '✓ Active' : '✗ Inactive'}
+                </StyledBadge>
               </td>
 
               {/* Created Date */}
@@ -122,20 +122,24 @@ export function JudgeList({
               {/* Actions */}
               <td style={styles.td}>
                 <div style={styles.actions}>
-                  <button
-                    style={styles.actionButton}
+                  <StyledButton
+                    variant="secondary"
+                    size="small"
                     onClick={() => onEdit(judge)}
                     title="Edit judge"
+                    style={styles.iconButton}
                   >
                     <Edit2 size={16} />
-                  </button>
-                  <button
-                    style={{ ...styles.actionButton, ...styles.deleteButton }}
+                  </StyledButton>
+                  <StyledButton
+                    variant="danger"
+                    size="small"
                     onClick={() => onDelete(judge)}
                     title="Delete judge"
+                    style={styles.iconButton}
                   >
                     <Trash2 size={16} />
-                  </button>
+                  </StyledButton>
                 </div>
               </td>
             </tr>
@@ -266,24 +270,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '13px',
     lineHeight: '1.5',
   },
-  activeBadge: {
-    display: 'inline-block',
-    padding: '6px 12px',
-    backgroundColor: '#d1fae5',
-    color: '#065f46',
-    borderRadius: '16px',
-    fontSize: '13px',
-    fontWeight: 500,
-  },
-  inactiveBadge: {
-    display: 'inline-block',
-    padding: '6px 12px',
-    backgroundColor: '#fee2e2',
-    color: '#991b1b',
-    borderRadius: '16px',
-    fontSize: '13px',
-    fontWeight: 500,
-  },
   dateText: {
     color: '#6b7280',
     fontSize: '13px',
@@ -294,19 +280,10 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
     gap: '8px',
   },
-  actionButton: {
-    padding: '6px',
-    backgroundColor: 'transparent',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    color: '#6b7280',
-    transition: 'all 0.15s',
+  iconButton: {
+    padding: '6px 8px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  deleteButton: {
-    color: '#dc2626',
   },
 };

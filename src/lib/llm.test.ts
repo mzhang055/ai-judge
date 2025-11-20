@@ -193,18 +193,18 @@ describe('LLM Service', () => {
     it('should handle timeout errors', async () => {
       // Mock a slow response that responds to abort signal
       mockFetch.mockImplementationOnce(
-        (options: RequestInit) =>
+        (_url: string, options?: RequestInit) =>
           new Promise((resolve, reject) => {
             const timeout = setTimeout(
               () =>
                 resolve(
                   new Response(JSON.stringify({ choices: [] }), { status: 200 })
                 ),
-              200
+              500 // Longer than the 100ms timeout
             );
 
             // Listen for abort signal
-            if (options.signal) {
+            if (options?.signal) {
               options.signal.addEventListener('abort', () => {
                 clearTimeout(timeout);
                 const error = new Error('The operation was aborted');
@@ -225,7 +225,7 @@ describe('LLM Service', () => {
         type: LLMErrorType.TIMEOUT,
         isRetryable: true,
       });
-    }, 10000); // Increase test timeout
+    });
   });
 
   describe('Retry logic', () => {

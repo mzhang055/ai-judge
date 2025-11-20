@@ -10,7 +10,7 @@ import {
 } from 'react-router-dom';
 import { useCallback } from 'react';
 import { Toaster } from 'react-hot-toast';
-import { FileUpload } from './components/FileUpload';
+import { FileUpload } from './pages/UploadPage';
 import { JudgesPage } from './pages/JudgesPage';
 import { QueuesPage } from './pages/QueuesPage';
 import { QueuePage } from './pages/QueuePage';
@@ -20,6 +20,7 @@ import JudgeAnalysisPage from './pages/JudgeAnalysisPage';
 import { HumanReviewQueue } from './pages/HumanReviewQueue';
 import logo from './assets/besimple-logo.png';
 import { TrendingUp, Settings, UserCheck } from 'lucide-react';
+import { NavButton } from './components/ui/NavButton';
 import './App.css';
 
 function AppContent() {
@@ -69,107 +70,24 @@ function AppContent() {
                 alignItems: 'center',
               }}
             >
-              <button
+              <NavButton
+                icon={<UserCheck size={16} strokeWidth={2.5} />}
+                label="Human Review"
+                isActive={location.pathname === '/human-review'}
                 onClick={() => navigate('/human-review')}
-                style={{
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  border: 'none',
-                  borderRadius: '8px',
-                  background:
-                    location.pathname === '/human-review'
-                      ? 'rgba(227, 158, 53, 0.1)'
-                      : 'transparent',
-                  color: '#E39E35',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (location.pathname !== '/human-review') {
-                    e.currentTarget.style.background =
-                      'rgba(227, 158, 53, 0.1)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (location.pathname !== '/human-review') {
-                    e.currentTarget.style.background = 'transparent';
-                  }
-                }}
-              >
-                <UserCheck size={16} strokeWidth={2.5} />
-                <span>Human Review</span>
-              </button>
-              <button
+              />
+              <NavButton
+                icon={<TrendingUp size={16} strokeWidth={2.5} />}
+                label="Judge Performance"
+                isActive={location.pathname.startsWith('/judge-performance')}
                 onClick={() => navigate('/judge-performance')}
-                style={{
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  border: 'none',
-                  borderRadius: '8px',
-                  background: location.pathname.startsWith('/judge-performance')
-                    ? 'rgba(227, 158, 53, 0.1)'
-                    : 'transparent',
-                  color: '#E39E35',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (!location.pathname.startsWith('/judge-performance')) {
-                    e.currentTarget.style.background =
-                      'rgba(227, 158, 53, 0.1)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!location.pathname.startsWith('/judge-performance')) {
-                    e.currentTarget.style.background = 'transparent';
-                  }
-                }}
-              >
-                <TrendingUp size={16} strokeWidth={2.5} />
-                <span>Judge Performance</span>
-              </button>
-              <button
+              />
+              <NavButton
+                icon={<Settings size={16} strokeWidth={2.5} />}
+                label="Manage Judges"
+                isActive={location.pathname === '/judges'}
                 onClick={() => navigate('/judges')}
-                style={{
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  border: 'none',
-                  borderRadius: '8px',
-                  background:
-                    location.pathname === '/judges'
-                      ? 'rgba(227, 158, 53, 0.1)'
-                      : 'transparent',
-                  color: '#E39E35',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (location.pathname !== '/judges') {
-                    e.currentTarget.style.background =
-                      'rgba(227, 158, 53, 0.1)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (location.pathname !== '/judges') {
-                    e.currentTarget.style.background = 'transparent';
-                  }
-                }}
-              >
-                <Settings size={16} strokeWidth={2.5} />
-                <span>Manage Judges</span>
-              </button>
+              />
             </div>
           )}
         </header>

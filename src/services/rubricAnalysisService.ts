@@ -600,6 +600,7 @@ Only output valid JSON, nothing else.`,
       ],
       temperature: 0.3,
       maxTokens: 2000,
+      timeout: 120000, // 2 minutes timeout for complex analysis
     });
 
     console.log('[LLM] Raw response:', response.content);
